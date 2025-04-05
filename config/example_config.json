@@ -1,0 +1,47 @@
+{
+    "base_dir": "~/Documents/magic_folder",  // Base directory where all magic folder data will be stored
+    "drop_dir": "incoming",                  // Directory where files are dropped for processing
+    "organized_dir": "sorted",               // Directory where organized files will be placed
+    "log_file": "magic_folder_log.txt",      // Log file name
+    
+    "model": {
+        "name": "distilbert-base-uncased",   // Model name from Hugging Face
+        "sample_length": 1000                // Maximum text sample length to analyze
+    },
+    
+    // Define your custom categories here
+    "categories": [
+        "invoices",                          // For business expenses
+        "statements",                        // Bank statements
+        "receipts",                          // Purchase receipts
+        "tax_documents",                     // Tax-related documents
+        "contracts",                         // Legal contracts
+        "personal",                          // Personal documents (ID, passport)
+        "health",                            // Medical records and insurance
+        "other"                              // Uncategorized documents
+    ],
+    
+    // Keywords used for categorizing files
+    "category_keywords": {
+        "invoices": ["invoice", "bill", "payment due", "net 30", "order number"],
+        "statements": ["statement", "account summary", "balance", "transaction history"],
+        "receipts": ["receipt", "thank you for your purchase", "order confirmation"],
+        "tax_documents": ["tax", "irs", "1099", "w-2", "deduction", "return"],
+        "contracts": ["agreement", "terms", "conditions", "signature", "contract"],
+        "personal": ["passport", "license", "identification", "certificate"],
+        "health": ["medical", "health", "insurance", "patient", "doctor", "prescription"],
+        "other": []
+    },
+    
+    // File extensions to ignore
+    "excluded_extensions": [".tmp", ".part", ".crdownload", ".partial"],
+    
+    // Specific files to ignore
+    "excluded_files": [".DS_Store", "Thumbs.db", "desktop.ini"],
+    
+    // Processing settings
+    "processing": {
+        "delay_seconds": 2,                  // Wait time after file appears before processing
+        "check_interval": 1.0                // Interval for checking processing queue
+    }
+}

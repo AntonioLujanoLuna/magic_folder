@@ -1,0 +1,12 @@
+watchdog>=2.1.9
+PyPDF2>=3.0.0
+python-docx>=0.8.11
+python-magic>=0.4.27
+pytesseract>=0.3.10
+Pillow>=9.3.0
+pandas>=1.5.0
+textract>=1.6.5
+transformers>=4.26.0
+openpyxl>=3.0.10
+ebooklib>=0.17.1
+mutagen>=1.45.1
