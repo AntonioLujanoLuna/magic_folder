@@ -5,6 +5,7 @@ Main entry point for the Magic Folder application
 import os
 import time
 import argparse
+import threading
 from pathlib import Path
 import pkg_resources
 from watchdog.observers import Observer
@@ -62,6 +63,23 @@ def parse_arguments():
         action="store_true",
         default=None,
         help="Disable content and embedding caching"
+    )
+    parser.add_argument(
+        "--web",
+        action="store_true",
+        help="Start the web interface"
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=5000,
+        help="Port for the web interface (default: 5000)"
+    )
+    parser.add_argument(
+        "--host",
+        type=str,
+        default="127.0.0.1",
+        help="Host for the web interface (default: 127.0.0.1)"
     )
     return parser.parse_args()
 
@@ -131,6 +149,28 @@ def main():
         print(f"- {category}")
     
     print(f"\nDrop files into the watch folder to process them.")
+    
+    # Start web interface if requested
+    if args.web:
+        try:
+            # Import the web interface module
+            from magic_folder.web_interface import run_web_interface
+            
+            # Start the web interface in a separate thread
+            print(f"\nStarting web interface on http://{args.host}:{args.port}")
+            print(f"Open a browser to this address to access the Magic Folder dashboard")
+            
+            web_thread = threading.Thread(
+                target=run_web_interface,
+                args=(config_path,),
+                kwargs={'host': args.host, 'port': args.port, 'debug': False}
+            )
+            web_thread.daemon = True
+            web_thread.start()
+        except ImportError:
+            print("\nWeb interface dependencies not installed.")
+            print("Install with: pip install flask")
+    
     print(f"Press Ctrl+C to exit.")
     print(f"================================================================\n")
     

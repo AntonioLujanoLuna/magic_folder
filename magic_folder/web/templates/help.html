@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magic Folder - Help</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-folder-symlink me-2"></i>Magic Folder
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="bi bi-house me-1"></i>Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/upload"><i class="bi bi-upload me-1"></i>Upload</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/files"><i class="bi bi-files me-1"></i>Files</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/reports"><i class="bi bi-bar-chart me-1"></i>Reports</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/settings"><i class="bi bi-gear me-1"></i>Settings</a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <a href="/help" class="btn btn-outline-light me-2 active">
+                        <i class="bi bi-question-circle me-1"></i>Help
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <h2><i class="bi bi-question-circle me-2"></i>Help & Documentation</h2>
+                <p class="text-muted">
+                    Learn how to use Magic Folder effectively with this comprehensive guide.
+                </p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-3 mb-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <i class="bi bi-list-ul me-1"></i>Topics
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush" id="help-topics">
+                            <a href="#getting-started" class="list-group-item list-group-item-action active">Getting Started</a>
+                            <a href="#uploading-files" class="list-group-item list-group-item-action">Uploading Files</a>
+                            <a href="#file-management" class="list-group-item list-group-item-action">File Management</a>
+                            <a href="#categories" class="list-group-item list-group-item-action">Categories & Organization</a>
+                            <a href="#reports" class="list-group-item list-group-item-action">Reports & Statistics</a>
+                            <a href="#settings" class="list-group-item list-group-item-action">Settings & Configuration</a>
+                            <a href="#feedback" class="list-group-item list-group-item-action">User Feedback System</a>
+                            <a href="#troubleshooting" class="list-group-item list-group-item-action">Troubleshooting</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="tab-content">
+                            <!-- Getting Started -->
+                            <div class="tab-pane fade show active" id="getting-started">
+                                <h3 class="mb-3">Getting Started with Magic Folder</h3>
+                                <p>
+                                    Magic Folder is an intelligent document management system that automatically categorizes and organizes your files using AI. 
+                                    This guide will help you understand how to use Magic Folder effectively.
+                                </p>
+                                
+                                <h5 class="mt-4"><i class="bi bi-1-circle me-1"></i>How Magic Folder Works</h5>
+                                <p>
+                                    Magic Folder monitors a designated "drop" folder on your system. When you place files in this folder, they are automatically:
+                                </p>
+                                <ul>
+                                    <li>Analyzed using AI to determine the content and context</li>
+                                    <li>Categorized based on the content</li>
+                                    <li>Moved to the appropriate category folder</li>
+                                    <li>Renamed with descriptive names (if enabled)</li>
+                                </ul>
+                                
+                                <h5 class="mt-4"><i class="bi bi-2-circle me-1"></i>Key Features</h5>
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <div class="card mb-3">
+                                            <div class="card-body">
+                                                <h6 class="card-title"><i class="bi bi-braces me-1 text-primary"></i>AI-Powered Organization</h6>
+                                                <p class="card-text">Files are automatically categorized using advanced AI analysis of their content.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card mb-3">
+                                            <div class="card-body">
+                                                <h6 class="card-title"><i class="bi bi-arrow-repeat me-1 text-primary"></i>User Feedback System</h6>
+                                                <p class="card-text">The system learns from your corrections to improve categorization over time.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card mb-3">
+                                            <div class="card-body">
+                                                <h6 class="card-title"><i class="bi bi-folder-symlink me-1 text-primary"></i>Automated Filing</h6>
+                                                <p class="card-text">No more manual sorting - files are organized into appropriate folders automatically.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card mb-3">
+                                            <div class="card-body">
+                                                <h6 class="card-title"><i class="bi bi-search me-1 text-primary"></i>Powerful Search</h6>
+                                                <p class="card-text">Quickly find documents based on content, category, or other attributes.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <h5 class="mt-4"><i class="bi bi-3-circle me-1"></i>Using the Web Interface</h5>
+                                <p>
+                                    The web interface gives you a convenient way to:
+                                </p>
+                                <ul>
+                                    <li>Upload files directly through your browser</li>
+                                    <li>View file statistics and organization</li>
+                                    <li>Search for specific files</li>
+                                    <li>Generate reports</li>
+                                    <li>Configure settings and preferences</li>
+                                </ul>
+                                
+                                <div class="alert alert-info mt-4">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <strong>Pro Tip:</strong> For the best experience, keep both the web interface and the watched folder method available. 
+                                    The web interface is great for individual file uploads and management, while the watched folder is perfect for batch processing.
+                                </div>
+                            </div>
+                            
+                            <!-- Uploading Files -->
+                            <div class="tab-pane fade" id="uploading-files">
+                                <h3 class="mb-3">Uploading Files</h3>
+                                <p>
+                                    There are two ways to add files to Magic Folder:
+                                </p>
+                                
+                                <h5 class="mt-4"><i class="bi bi-upload me-1"></i>Web Upload</h5>
+                                <p>
+                                    The web interface allows you to upload files directly through your browser:
+                                </p>
+                                <ol>
+                                    <li>Navigate to the <a href="/upload">Upload page</a></li>
+                                    <li>Drag and drop files into the upload area, or click "Browse Files" to select them</li>
+                                    <li>Click "Upload Files" to begin the upload process</li>
+                                    <li>Files will be processed and categorized automatically</li>
+                                </ol>
+                                <p>
+                                    The web upload supports multiple files at once and provides a progress indicator during upload.
+                                </p>
+                                
+                                <h5 class="mt-4"><i class="bi bi-folder-plus me-1"></i>Watched Folder Method</h5>
+                                <p>
+                                    You can also add files by placing them in the watched folder on your system:
+                                </p>
+                                <ol>
+                                    <li>Open your file explorer and navigate to the watched folder location</li>
+                                    <li>Copy or move files into this folder</li>
+                                    <li>Magic Folder will automatically process them</li>
+                                </ol>
+                                <p>
+                                    The watched folder location is displayed on the Settings page.
+                                </p>
+                                
+                                <div class="alert alert-warning mt-4">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    <strong>Note:</strong> The maximum file size for web uploads is 16MB. For larger files, please use the watched folder method.
+                                </div>
+                                
+                                <h5 class="mt-4"><i class="bi bi-file-earmark-check me-1"></i>Supported File Types</h5>
+                                <p>
+                                    Magic Folder can process and categorize the following file types:
+                                </p>
+                                <ul>
+                                    <li><strong>Documents:</strong> PDF, DOC, DOCX, TXT, RTF, PAGES</li>
+                                    <li><strong>Images:</strong> JPG, JPEG, PNG, GIF, BMP, WEBP, TIFF (with OCR)</li>
+                                    <li><strong>Spreadsheets:</strong> XLS, XLSX, CSV, NUMBERS</li>
+                                    <li><strong>Presentations:</strong> PPT, PPTX, KEY</li>
+                                    <li><strong>Email:</strong> EML, MSG</li>
+                                    <li><strong>Archives:</strong> ZIP, RAR, 7Z (contents are inspected if enabled)</li>
+                                </ul>
+                            </div>
+                            
+                            <!-- File Management -->
+                            <div class="tab-pane fade" id="file-management">
+                                <h3 class="mb-3">File Management</h3>
+                                <p>
+                                    The Files page provides tools for managing your documents after they've been processed.
+                                </p>
+                                
+                                <h5 class="mt-4"><i class="bi bi-search me-1"></i>Finding Files</h5>
+                                <p>
+                                    There are several ways to find files in Magic Folder:
+                                </p>
+                                <ul>
+                                    <li><strong>Search:</strong> Use the search box at the top of the Files page to search by filename</li>
+                                    <li><strong>Filter by Category:</strong> Select a category from the sidebar to view files from that category only</li>
+                                    <li><strong>Advanced Filters:</strong> Filter by date range, file type, and other attributes</li>
+                                </ul>
+                                
+                                <h5 class="mt-4"><i class="bi bi-file-earmark me-1"></i>File Actions</h5>
+                                <p>
+                                    For each file, you can:
+                                </p>
+                                <ul>
+                                    <li><strong>View Details:</strong> Click on the file name or the View button to see detailed information</li>
+                                    <li><strong>Download:</strong> Download the file to your computer</li>
+                                    <li><strong>Recategorize:</strong> Move a file to a different category</li>
+                                    <li><strong>Share:</strong> Generate a download link to share with others</li>
+                                    <li><strong>Delete:</strong> Remove the file from Magic Folder</li>
+                                </ul>
+                                
+                                <h5 class="mt-4"><i class="bi bi-files me-1"></i>Batch Operations</h5>
+                                <p>
+                                    To perform actions on multiple files at once:
+                                </p>
+                                <ol>
+                                    <li>Use the checkboxes to select files</li>
+                                    <li>Click the "Batch Actions" dropdown</li>
+                                    <li>Select the action you want to perform</li>
+                                </ol>
+                                
+                                <h5 class="mt-4"><i class="bi bi-file-earmark-text me-1"></i>File Details</h5>
+                                <p>
+                                    The file details page shows comprehensive information about a file:
+                                </p>
+                                <ul>
+                                    <li>File metadata (type, size, date added)</li>
+                                    <li>Category information</li>
+                                    <li>Content preview (when available)</li>
+                                    <li>Keywords and entities extracted from the content</li>
+                                    <li>Similar files based on content analysis</li>
+                                </ul>
+                            </div>
+                            
+                            <!-- Other sections would follow the same pattern -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-light py-3 mt-5">
+        <div class="container">
+            <p class="text-center text-muted mb-0">
+                &copy; {{ current_year }} Magic Folder - Intelligent Document Management
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle topic navigation
+            const topicLinks = document.querySelectorAll('#help-topics a');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+            
+            topicLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all links and add to clicked link
+                    topicLinks.forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Hide all tab panes
+                    tabPanes.forEach(pane => {
+                        pane.classList.remove('show', 'active');
+                    });
+                    
+                    // Show the selected tab pane
+                    const target = this.getAttribute('href').substring(1);
+                    document.getElementById(target).classList.add('show', 'active');
+                    
+                    // Scroll to top of content
+                    window.scrollTo(0, 0);
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

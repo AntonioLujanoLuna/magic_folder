@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magic Folder - Document Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-folder-symlink me-2"></i>Magic Folder
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/"><i class="bi bi-house me-1"></i>Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/upload"><i class="bi bi-upload me-1"></i>Upload</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/files"><i class="bi bi-files me-1"></i>Files</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/reports"><i class="bi bi-bar-chart me-1"></i>Reports</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/settings"><i class="bi bi-gear me-1"></i>Settings</a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <a href="/help" class="btn btn-outline-light me-2">
+                        <i class="bi bi-question-circle me-1"></i>Help
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Welcome to Magic Folder! Your intelligent document management system. Easily manage, categorize, and search through your documents.
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stats-card card-hover">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-primary"><i class="bi bi-files me-1"></i>Total Files</h5>
+                        <p class="display-6 mb-0">{{ total_files }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card card-hover">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-success"><i class="bi bi-check2-circle me-1"></i>Processed</h5>
+                        <p class="display-6 mb-0">{{ processed_files }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card card-hover">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-warning"><i class="bi bi-hourglass-split me-1"></i>Pending</h5>
+                        <p class="display-6 mb-0">{{ pending_files }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card card-hover">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Issues</h5>
+                        <p class="display-6 mb-0">{{ issue_files }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <i class="bi bi-pie-chart me-1"></i>Categories Distribution
+                    </div>
+                    <div class="card-body">
+                        <canvas id="categoriesChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <i class="bi bi-activity me-1"></i>Monthly Activity
+                    </div>
+                    <div class="card-body">
+                        <canvas id="activityChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <i class="bi bi-clock-history me-1"></i>Recent Files
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>File Name</th>
+                                        <th>Category</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for file in recent_files %}
+                                    <tr>
+                                        <td>
+                                            <i class="bi bi-file-earmark-text text-primary file-icon"></i>
+                                            {{ file.name }}
+                                        </td>
+                                        <td>
+                                            <span class="badge category-badge category-{{ file.category }}">
+                                                {{ file.category }}
+                                            </span>
+                                        </td>
+                                        <td>{{ file.date }}</td>
+                                        <td>
+                                            <a href="/file/{{ file.id }}" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="/file/{{ file.id }}/download" class="btn btn-sm btn-success">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="/files" class="btn btn-outline-primary">View All Files</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <i class="bi bi-terminal me-1"></i>Activity Log
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="log-container">
+                            {% for log in activity_logs %}
+                            <div class="log-entry">
+                                <small class="text-muted">{{ log.timestamp }}</small>
+                                <span class="ms-2">{{ log.message }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-light py-3 mt-5">
+        <div class="container">
+            <p class="text-center text-muted mb-0">
+                &copy; {{ current_year }} Magic Folder - Intelligent Document Management
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Categories distribution chart
+        const ctxCategories = document.getElementById('categoriesChart').getContext('2d');
+        const categoriesChart = new Chart(ctxCategories, {
+            type: 'doughnut',
+            data: {
+                labels: {{ category_labels|safe }},
+                datasets: [{
+                    data: {{ category_counts|safe }},
+                    backgroundColor: [
+                        '#dc3545', '#fd7e14', '#6610f2', '#0dcaf0', 
+                        '#6c757d', '#198754', '#0d6efd', '#6f42c1', 
+                        '#20c997', '#adb5bd'
+                    ],
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    }
+                }
+            }
+        });
+
+        // Activity chart
+        const ctxActivity = document.getElementById('activityChart').getContext('2d');
+        const activityChart = new Chart(ctxActivity, {
+            type: 'bar',
+            data: {
+                labels: {{ activity_labels|safe }},
+                datasets: [{
+                    label: 'Files Added',
+                    data: {{ activity_data|safe }},
+                    backgroundColor: 'rgba(13, 110, 253, 0.5)',
+                    borderColor: 'rgba(13, 110, 253, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html> 

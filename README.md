@@ -8,6 +8,8 @@ A local AI-powered file organization system that automatically categorizes and r
 - **User Feedback System**: Train the system through corrections for better categorization over time
 - **Performance Optimization**: Content and embedding caching to speed up processing
 - **Improved Configuration**: Extensive configuration options for fine-tuning
+- **Web Interface**: Modern dashboard for file management and visualization
+- **Smart Installer**: Dependency checking and guided installation
 
 ## Features
 
@@ -25,7 +27,20 @@ A local AI-powered file organization system that automatically categorizes and r
 - Python 3.8 or higher
 - Tesseract OCR (for image processing)
 
-### Install from source
+### Easy Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/magic_folder.git
+cd magic_folder
+
+# Run the installer script
+python install.py
+```
+
+The installer will check for dependencies and guide you through the setup process.
+
+### Manual Installation
 
 ```bash
 # Clone the repository
@@ -75,7 +90,28 @@ magic-folder --no-feedback  # Disable
 # Enable or disable caching
 magic-folder --cache        # Enable
 magic-folder --no-cache     # Disable
+
+# Start the web interface
+magic-folder --web --port 5000 --host 127.0.0.1
 ```
+
+### Web Interface
+
+Magic Folder now includes a modern web interface for managing your files:
+
+```bash
+# Start Magic Folder with the web interface
+magic-folder --web
+```
+
+Then open `http://127.0.0.1:5000` in your browser to access the dashboard.
+
+The web interface provides:
+- File statistics and visualization
+- Easy file uploading and management
+- Category management
+- File recategorization with feedback
+- Daily and weekly reports
 
 ## Configuration
 

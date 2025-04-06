@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magic Folder - Upload Files</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-folder-symlink me-2"></i>Magic Folder
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="bi bi-house me-1"></i>Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/upload"><i class="bi bi-upload me-1"></i>Upload</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/files"><i class="bi bi-files me-1"></i>Files</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/reports"><i class="bi bi-bar-chart me-1"></i>Reports</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/settings"><i class="bi bi-gear me-1"></i>Settings</a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <a href="/help" class="btn btn-outline-light me-2">
+                        <i class="bi bi-question-circle me-1"></i>Help
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <h2><i class="bi bi-upload me-2"></i>Upload Files</h2>
+                <p class="text-muted">
+                    Drag and drop files to upload, or click to select files. 
+                    Files will be automatically processed and categorized.
+                </p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <i class="bi bi-cloud-upload me-1"></i>Upload Files
+                    </div>
+                    <div class="card-body">
+                        <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+                            <div id="dropZone" class="upload-drop-zone">
+                                <i class="bi bi-cloud-arrow-up display-4 mb-3"></i>
+                                <h4>Drag & Drop Files Here</h4>
+                                <p>or</p>
+                                <input type="file" id="fileInput" name="files[]" multiple class="d-none">
+                                <button type="button" id="browseBtn" class="btn btn-primary">
+                                    <i class="bi bi-folder me-1"></i>Browse Files
+                                </button>
+                                <p class="mt-2 small text-muted">
+                                    Supported file types: PDF, JPG, PNG, DOC, DOCX, XLS, XLSX, TXT
+                                </p>
+                            </div>
+
+                            <div id="filePreview" class="file-preview d-none">
+                                <!-- Files will be added here dynamically -->
+                            </div>
+
+                            <div id="uploadProgress" class="progress mt-3 d-none">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                            </div>
+
+                            <div class="mt-3 text-end">
+                                <button type="button" id="clearBtn" class="btn btn-secondary d-none">
+                                    <i class="bi bi-x-circle me-1"></i>Clear
+                                </button>
+                                <button type="submit" id="uploadBtn" class="btn btn-primary d-none">
+                                    <i class="bi bi-upload me-1"></i>Upload Files
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <i class="bi bi-info-circle me-1"></i>Upload Tips
+                    </div>
+                    <div class="card-body">
+                        <ul class="mb-0">
+                            <li class="mb-2">You can upload multiple files at once.</li>
+                            <li class="mb-2">Files are automatically categorized using AI.</li>
+                            <li class="mb-2">Maximum file size: 16MB per file.</li>
+                            <li class="mb-2">Uploaded files will be stored securely.</li>
+                            <li class="mb-2">You can edit file categories after upload if needed.</li>
+                            <li class="mb-2">For bulk uploads, consider using the watched folder instead.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header bg-primary text-white">
+                        <i class="bi bi-folder-check me-1"></i>Recent Uploads
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            {% for file in recent_uploads %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="bi bi-file-earmark-text text-primary me-2"></i>
+                                    {{ file.name }}
+                                    <br>
+                                    <small class="text-muted">{{ file.date }}</small>
+                                </div>
+                                <span class="badge bg-success rounded-pill">{{ file.category }}</span>
+                            </li>
+                            {% endfor %}
+                            {% if not recent_uploads %}
+                            <li class="list-group-item text-center text-muted">
+                                No recent uploads
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-light py-3 mt-5">
+        <div class="container">
+            <p class="text-center text-muted mb-0">
+                &copy; {{ current_year }} Magic Folder - Intelligent Document Management
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            const browseBtn = document.getElementById('browseBtn');
+            const filePreview = document.getElementById('filePreview');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const uploadProgress = document.getElementById('uploadProgress');
+            const progressBar = uploadProgress.querySelector('.progress-bar');
+            const form = document.getElementById('uploadForm');
+            
+            // Browse button click
+            browseBtn.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            // File input change
+            fileInput.addEventListener('change', function() {
+                handleFiles(this.files);
+            });
+            
+            // Drag and drop events
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                dropZone.classList.add('highlight');
+            }
+            
+            function unhighlight() {
+                dropZone.classList.remove('highlight');
+            }
+            
+            // Handle drop
+            dropZone.addEventListener('drop', function(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                handleFiles(files);
+            });
+            
+            // Handle selected files
+            function handleFiles(files) {
+                if (files.length === 0) return;
+                
+                filePreview.innerHTML = '';
+                filePreview.classList.remove('d-none');
+                uploadBtn.classList.remove('d-none');
+                clearBtn.classList.remove('d-none');
+                
+                Array.from(files).forEach(file => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    
+                    const icon = document.createElement('i');
+                    icon.className = 'bi bi-file-earmark-text';
+                    fileItem.appendChild(icon);
+                    
+                    const fileName = document.createElement('span');
+                    fileName.textContent = file.name;
+                    fileItem.appendChild(fileName);
+                    
+                    const fileSize = document.createElement('small');
+                    fileSize.className = 'text-muted ms-2';
+                    fileSize.textContent = formatFileSize(file.size);
+                    fileItem.appendChild(fileSize);
+                    
+                    filePreview.appendChild(fileItem);
+                });
+            }
+            
+            // Format file size
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            // Clear button
+            clearBtn.addEventListener('click', function() {
+                fileInput.value = '';
+                filePreview.innerHTML = '';
+                filePreview.classList.add('d-none');
+                uploadBtn.classList.add('d-none');
+                clearBtn.classList.add('d-none');
+                uploadProgress.classList.add('d-none');
+                progressBar.style.width = '0%';
+            });
+            
+            // Form submission
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                if (fileInput.files.length === 0) return;
+                
+                const formData = new FormData(form);
+                const xhr = new XMLHttpRequest();
+                
+                xhr.open('POST', '/upload', true);
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                
+                uploadProgress.classList.remove('d-none');
+                uploadBtn.disabled = true;
+                clearBtn.disabled = true;
+                
+                xhr.upload.addEventListener('progress', function(e) {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        progressBar.style.width = percentComplete + '%';
+                    }
+                });
+                
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        
+                        progressBar.style.width = '100%';
+                        progressBar.classList.remove('progress-bar-animated');
+                        
+                        setTimeout(function() {
+                            window.location.href = '/files';
+                        }, 1000);
+                    } else {
+                        alert('Upload failed. Please try again.');
+                        progressBar.classList.add('bg-danger');
+                    }
+                };
+                
+                xhr.onerror = function() {
+                    alert('Upload failed. Please try again.');
+                    progressBar.classList.add('bg-danger');
+                };
+                
+                xhr.send(formData);
+            });
+        });
+    </script>
+</body>
+</html> 

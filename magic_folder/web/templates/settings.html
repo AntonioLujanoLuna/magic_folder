@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block title %}Settings - Magic Folder{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Settings</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="/setup" class="btn btn-sm btn-outline-secondary">Advanced Setup</a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card card-hover">
+            <div class="card-header bg-header">
+                <h5 class="card-title mb-0"><i class="bi bi-gear"></i> Magic Folder Settings</h5>
+            </div>
+            <div class="card-body">
+                <form action="/settings" method="post">
+                    <!-- Basic Settings -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold"><i class="bi bi-sliders"></i> AI Model Settings</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="model_name" class="form-label">AI Model</label>
+                                    <input type="text" class="form-control" id="model_name" name="model_name" 
+                                           value="{{ config.model_name }}">
+                                    <div class="form-text">Hugging Face model name for text classification</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="sample_length" class="form-label">Sample Length</label>
+                                    <input type="number" class="form-control" id="sample_length" name="sample_length" 
+                                           value="{{ config.sample_length }}">
+                                    <div class="form-text">Maximum text length to analyze (characters)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Feature Toggles -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold"><i class="bi bi-toggles"></i> Feature Toggles</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="enable_content_cache" name="enable_content_cache"
+                                           {% if config.enable_content_cache %}checked{% endif %}>
+                                    <label class="form-check-label" for="enable_content_cache">Content Caching</label>
+                                    <div class="form-text">Cache extracted file content</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="enable_embedding_cache" name="enable_embedding_cache"
+                                           {% if config.enable_embedding_cache %}checked{% endif %}>
+                                    <label class="form-check-label" for="enable_embedding_cache">Embedding Cache</label>
+                                    <div class="form-text">Cache document embeddings</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="enable_feedback_system" name="enable_feedback_system"
+                                           {% if config.enable_feedback_system %}checked{% endif %}>
+                                    <label class="form-check-label" for="enable_feedback_system">Feedback System</label>
+                                    <div class="form-text">Learn from user corrections</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="dedup_enabled" name="dedup_enabled"
+                                           {% if config.dedup_enabled %}checked{% endif %}>
+                                    <label class="form-check-label" for="dedup_enabled">Deduplication</label>
+                                    <div class="form-text">Detect and handle duplicate files</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Advanced File Type Settings -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold"><i class="bi bi-file-earmark-code"></i> File Type Settings</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="enable_audio_analysis" name="enable_audio_analysis"
+                                           {% if config.enable_audio_analysis %}checked{% endif %}>
+                                    <label class="form-check-label" for="enable_audio_analysis">Audio Analysis</label>
+                                    <div class="form-text">Extract metadata from audio files</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="enable_video_analysis" name="enable_video_analysis"
+                                           {% if config.enable_video_analysis %}checked{% endif %}>
+                                    <label class="form-check-label" for="enable_video_analysis">Video Analysis</label>
+                                    <div class="form-text">Extract metadata from video files</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="enable_archive_inspection" name="enable_archive_inspection"
+                                           {% if config.enable_archive_inspection %}checked{% endif %}>
+                                    <label class="form-check-label" for="enable_archive_inspection">Archive Inspection</label>
+                                    <div class="form-text">Look inside archive files (zip, etc.)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Directory Information (Read-only) -->
+                    <div class="mb-4">
+                        <h6 class="fw-bold"><i class="bi bi-folder"></i> Directory Information</h6>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-2">
+                                    <label class="form-label">Base Directory</label>
+                                    <input type="text" class="form-control" value="{{ config.base_dir }}" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-2">
+                                    <label class="form-label">Drop Directory</label>
+                                    <input type="text" class="form-control" value="{{ config.drop_dir }}" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-2">
+                                    <label class="form-label">Organized Directory</label>
+                                    <input type="text" class="form-control" value="{{ config.organized_dir }}" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-text">
+                            To change directory paths, please use the <a href="/setup">Advanced Setup</a> page.
+                        </div>
+                    </div>
+                    
+                    <div class="text-end">
+                        <a href="/" class="btn btn-secondary me-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Save Settings</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
