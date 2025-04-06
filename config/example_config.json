@@ -1,27 +1,25 @@
 {
-    "base_dir": "~/Documents/magic_folder",  // Base directory where all magic folder data will be stored
-    "drop_dir": "incoming",                  // Directory where files are dropped for processing
-    "organized_dir": "sorted",               // Directory where organized files will be placed
-    "log_file": "magic_folder_log.txt",      // Log file name
+    "base_dir": "~/Documents/magic_folder",
+    "drop_dir": "incoming",
+    "organized_dir": "sorted",
+    "log_file": "magic_folder_log.txt",
     
     "model": {
-        "name": "distilbert-base-uncased",   // Model name from Hugging Face
-        "sample_length": 1000                // Maximum text sample length to analyze
+        "name": "distilbert-base-uncased",
+        "sample_length": 1000
     },
     
-    // Define your custom categories here
     "categories": [
-        "invoices",                          // For business expenses
-        "statements",                        // Bank statements
-        "receipts",                          // Purchase receipts
-        "tax_documents",                     // Tax-related documents
-        "contracts",                         // Legal contracts
-        "personal",                          // Personal documents (ID, passport)
-        "health",                            // Medical records and insurance
-        "other"                              // Uncategorized documents
+        "invoices",
+        "statements",
+        "receipts",
+        "tax_documents",
+        "contracts",
+        "personal",
+        "health",
+        "other"
     ],
     
-    // Keywords used for categorizing files
     "category_keywords": {
         "invoices": ["invoice", "bill", "payment due", "net 30", "order number"],
         "statements": ["statement", "account summary", "balance", "transaction history"],
@@ -33,15 +31,38 @@
         "other": []
     },
     
-    // File extensions to ignore
     "excluded_extensions": [".tmp", ".part", ".crdownload", ".partial"],
     
-    // Specific files to ignore
     "excluded_files": [".DS_Store", "Thumbs.db", "desktop.ini"],
     
-    // Processing settings
     "processing": {
-        "delay_seconds": 2,                  // Wait time after file appears before processing
-        "check_interval": 1.0                // Interval for checking processing queue
+        "delay_seconds": 2,
+        "check_interval": 1.0
+    },
+    
+    "deduplication": {
+        "enabled": true,
+        "hash_method": "md5",
+        "action": "move"
+    },
+    
+    "advanced_file_types": {
+        "enable_audio_analysis": true,
+        "enable_video_analysis": true,
+        "enable_archive_inspection": true,
+        "ocr_languages": ["eng"]
+    },
+    
+    "performance": {
+        "enable_content_cache": true,
+        "content_cache_size": 500,
+        "enable_embedding_cache": true,
+        "embedding_cache_size": 1000
+    },
+    
+    "feedback": {
+        "enable_feedback_system": true,
+        "feedback_dir_name": "feedback",
+        "embedding_similarity_threshold": 0.3
     }
 }

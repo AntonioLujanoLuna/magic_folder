@@ -6,6 +6,8 @@ import os
 import io
 import re
 import magic
+import pickle
+import hashlib
 import PyPDF2
 import docx
 import csv
@@ -37,6 +39,72 @@ class ContentExtractor:
         self.enable_audio = config.enable_audio_analysis
         self.enable_video = config.enable_video_analysis
         self.enable_archives = config.enable_archive_inspection
+        
+        # Initialize content cache
+        self.cache_file = os.path.join(config.base_dir, "content_cache.pkl")
+        self.content_cache = {}
+        self._load_cache()
+    
+    def _load_cache(self):
+        """Load the content extraction cache from disk"""
+        if os.path.exists(self.cache_file):
+            try:
+                with open(self.cache_file, 'rb') as f:
+                    self.content_cache = pickle.load(f)
+                log_activity(f"Loaded content cache with {len(self.content_cache)} entries")
+            except Exception as e:
+                log_activity(f"Error loading content cache: {e}")
+                self.content_cache = {}
+    
+    def _save_cache(self):
+        """Save the content extraction cache to disk"""
+        try:
+            # Limit cache size to the configured value
+            if len(self.content_cache) > self.config.content_cache_size:
+                # Remove oldest entries
+                keys = list(self.content_cache.keys())
+                for k in keys[:-self.config.content_cache_size]:
+                    del self.content_cache[k]
+            
+            with open(self.cache_file, 'wb') as f:
+                pickle.dump(self.content_cache, f)
+        except Exception as e:
+            log_activity(f"Error saving content cache: {e}")
+    
+    def _calculate_file_hash(self, file_path, chunk_size=8192):
+        """
+        Calculate a hash of the file for caching purposes
+        
+        Args:
+            file_path (str): Path to the file
+            chunk_size (int): Size of chunks to read
+            
+        Returns:
+            str: Hex digest of the file hash
+        """
+        file_hash = hashlib.md5()
+        try:
+            with open(file_path, 'rb') as f:
+                # If file is large, only hash beginning and end
+                file_size = os.path.getsize(file_path)
+                if file_size > 1024 * 1024 * 10:  # 10MB
+                    # Read first 1MB
+                    data = f.read(1024 * 1024)
+                    file_hash.update(data)
+                    
+                    # Read last 1MB
+                    f.seek(-1024 * 1024, os.SEEK_END)
+                    data = f.read(1024 * 1024)
+                    file_hash.update(data)
+                else:
+                    # Hash the entire file for smaller files
+                    for chunk in iter(lambda: f.read(chunk_size), b""):
+                        file_hash.update(chunk)
+                        
+            return file_hash.hexdigest()
+        except Exception as e:
+            log_activity(f"Error calculating file hash: {e}")
+            return None
     
     def extract_text(self, file_path):
         """
@@ -48,55 +116,76 @@ class ContentExtractor:
         Returns:
             str: Extracted text content
         """
+        # Check cache first
+        file_hash = self._calculate_file_hash(file_path)
+        if file_hash and file_hash in self.content_cache:
+            log_activity(f"Using cached content for {os.path.basename(file_path)}")
+            return self.content_cache[file_hash]
+        
         mime = magic.Magic(mime=True)
         file_type = mime.from_file(file_path)
         file_extension = os.path.splitext(file_path)[1].lower()
         
         try:
+            content = ""
             # Text files
             if 'text/' in file_type or file_extension in ['.txt', '.md', '.log', '.csv', '.json', '.xml', '.html', '.css', '.js']:
-                return self._extract_from_text(file_path, file_type)
+                content = self._extract_from_text(file_path, file_type)
             
             # PDF files
             elif file_type == 'application/pdf' or file_extension == '.pdf':
-                return self._extract_from_pdf(file_path)
+                content = self._extract_from_pdf(file_path)
             
             # Microsoft Office documents
             elif any(typ in file_type for typ in ['officedocument', 'msword', 'vnd.ms-']) or file_extension in ['.docx', '.doc', '.pptx', '.ppt', '.xlsx', '.xls']:
-                return self._extract_from_office(file_path, file_extension)
+                content = self._extract_from_office(file_path, file_extension)
             
             # Image files - use OCR
             elif 'image/' in file_type or file_extension in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp']:
-                return self._extract_from_image(file_path)
+                content = self._extract_from_image(file_path)
             
             # Audio files
             elif ('audio/' in file_type or file_extension in ['.mp3', '.wav', '.ogg', '.flac', '.m4a']) and self.enable_audio:
-                return self._extract_from_audio(file_path)
+                content = self._extract_from_audio(file_path)
             
             # Video files
             elif ('video/' in file_type or file_extension in ['.mp4', '.avi', '.mov', '.mkv', '.webm']) and self.enable_video:
-                return self._extract_from_video(file_path)
+                content = self._extract_from_video(file_path)
             
             # Archive files
             elif (('application/zip' in file_type or 'application/x-tar' in file_type or 'application/x-gzip' in file_type) or 
                   file_extension in ['.zip', '.tar', '.gz', '.tgz', '.rar', '.7z']) and self.enable_archives:
-                return self._extract_from_archive(file_path, file_extension)
+                content = self._extract_from_archive(file_path, file_extension)
             
             # eBook formats
             elif file_extension in ['.epub', '.mobi', '.azw', '.azw3']:
-                return self._extract_from_ebook(file_path, file_extension)
+                content = self._extract_from_ebook(file_path, file_extension)
             
             # Fallback to textract for other file types
             else:
                 try:
                     text = textract.process(file_path).decode('utf-8')
-                    return text[:self.sample_length]
+                    content = text[:self.sample_length]
                 except:
-                    return f"Unable to extract content from {os.path.basename(file_path)}. File type: {file_type}"
+                    content = f"Unable to extract content from {os.path.basename(file_path)}. File type: {file_type}"
+            
+            # Cache the result if we have a valid hash
+            if file_hash and content:
+                self.content_cache[file_hash] = content
+                self._save_cache()
+                
+            return content
                 
         except Exception as e:
             log_activity(f"Error extracting content from {file_path}: {e}")
-            return f"Error extracting content: {str(e)[:100]}..."
+            error_msg = f"Error extracting content: {str(e)[:100]}..."
+            
+            # Cache error message too to avoid repeated extraction attempts
+            if file_hash:
+                self.content_cache[file_hash] = error_msg
+                self._save_cache()
+                
+            return error_msg
     
     def _extract_from_text(self, file_path, file_type):
         """

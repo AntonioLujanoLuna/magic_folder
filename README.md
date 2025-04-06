@@ -2,6 +2,13 @@
 
 A local AI-powered file organization system that automatically categorizes and renames files based on their content.
 
+## 🎉 New Features
+
+- **Embedding-based Classification**: Enhanced AI analysis using state-of-the-art embedding comparison
+- **User Feedback System**: Train the system through corrections for better categorization over time
+- **Performance Optimization**: Content and embedding caching to speed up processing
+- **Improved Configuration**: Extensive configuration options for fine-tuning
+
 ## Features
 
 - **Smart Categorization**: Uses a lightweight local AI model to categorize files based on their content
@@ -9,6 +16,7 @@ A local AI-powered file organization system that automatically categorizes and r
 - **Automatic Organization**: Moves files to appropriate category folders
 - **Descriptive Naming**: Generates meaningful names based on file content
 - **Low Resource Usage**: Uses a small LLM model suitable for local execution
+- **Content Caching**: Avoids reprocessing similar files for better performance
 
 ## Installation
 
@@ -45,16 +53,12 @@ Download and install from [GitHub](https://github.com/UB-Mannheim/tesseract/wiki
 
 ## Usage
 
-### Basic Usage
+### Command-Line Options
 
 ```bash
 # Start with default configuration
 magic-folder
-```
 
-### Custom Configuration
-
-```bash
 # Use a custom configuration file
 magic-folder --config /path/to/your/config.json
 
@@ -63,6 +67,14 @@ magic-folder --base-dir ~/Documents/my_magic_folder
 
 # Use a different AI model
 magic-folder --model distilroberta-base
+
+# Enable or disable feedback system
+magic-folder --feedback     # Enable
+magic-folder --no-feedback  # Disable
+
+# Enable or disable caching
+magic-folder --cache        # Enable
+magic-folder --no-cache     # Disable
 ```
 
 ## Configuration
@@ -106,6 +118,28 @@ Magic Folder can be customized by creating a configuration file. See `config/exa
 2. When a file is detected, it extracts text content using appropriate methods
 3. The AI analyzer categorizes the file based on content
 4. The file is renamed with a descriptive name and moved to the appropriate category folder
+
+## User Feedback System
+
+Magic Folder now includes a feedback mechanism to improve categorization over time:
+
+1. Processed files are made available in the `feedback/recent` directory
+2. To correct a miscategorized file, move it from `recent` to the appropriate category folder under `feedback/`
+3. The system will:
+   - Move the file to the correct category in your organized folders
+   - Learn from your correction to improve future categorizations
+   - Update keywords and content patterns for that category
+
+For example, if "invoice.pdf" was incorrectly categorized as "work" but should be "financial":
+- Find `work--invoice_20230615_123045.pdf` in `feedback/recent`
+- Move it to `feedback/financial/`
+- Magic Folder will automatically recategorize it and improve its model
+
+## Performance Optimizations
+
+- **Content Caching**: Magic Folder now caches extracted content to avoid reprocessing similar files
+- **Embedding-based Analysis**: Uses advanced embedding comparison for more accurate categorization
+- **Adaptive Learning**: Improves categorization accuracy based on your feedback
 
 ## Contributing
 

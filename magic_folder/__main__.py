@@ -39,6 +39,30 @@ def parse_arguments():
         default=None,
         help="AI model to use (overrides config setting)"
     )
+    parser.add_argument(
+        "--feedback",
+        action="store_true",
+        default=None,
+        help="Enable user feedback system"
+    )
+    parser.add_argument(
+        "--no-feedback",
+        action="store_true",
+        default=None,
+        help="Disable user feedback system"
+    )
+    parser.add_argument(
+        "--cache",
+        action="store_true",
+        default=None,
+        help="Enable content and embedding caching"
+    )
+    parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        default=None,
+        help="Disable content and embedding caching"
+    )
     return parser.parse_args()
 
 def main():
@@ -62,6 +86,20 @@ def main():
     if args.model:
         config.model_name = args.model
     
+    # Handle feedback system settings
+    if args.feedback:
+        config.enable_feedback_system = True
+    elif args.no_feedback:
+        config.enable_feedback_system = False
+    
+    # Handle caching settings
+    if args.cache:
+        config.enable_content_cache = True
+        config.enable_embedding_cache = True
+    elif args.no_cache:
+        config.enable_content_cache = False
+        config.enable_embedding_cache = False
+    
     # Ensure all directories exist
     config.ensure_directories()
     
@@ -74,10 +112,27 @@ def main():
     observer.schedule(event_handler, config.drop_dir, recursive=False)
     observer.start()
     
-    print(f"Magic Folder is watching: {config.drop_dir}")
-    print(f"Organized files will be placed in: {config.organized_dir}")
-    print("Drop files into the watch folder to process them.")
-    print("Press Ctrl+C to exit.")
+    print(f"\n========================== Magic Folder =========================")
+    print(f"Watching: {config.drop_dir}")
+    print(f"Organized files: {config.organized_dir}")
+    
+    # Print active features
+    print(f"\nActive Features:")
+    print(f"- AI Model: {config.model_name}")
+    print(f"- Deduplication: {'Enabled' if config.dedup_enabled else 'Disabled'}")
+    print(f"- Content Caching: {'Enabled' if config.enable_content_cache else 'Disabled'}")
+    print(f"- User Feedback System: {'Enabled' if config.enable_feedback_system else 'Disabled'}")
+    
+    if config.enable_feedback_system:
+        print(f"  Feedback directory: {config.feedback_dir}")
+    
+    print(f"\nSupported Categories:")
+    for category in config.categories:
+        print(f"- {category}")
+    
+    print(f"\nDrop files into the watch folder to process them.")
+    print(f"Press Ctrl+C to exit.")
+    print(f"================================================================\n")
     
     try:
         while True:

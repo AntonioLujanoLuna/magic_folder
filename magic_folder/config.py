@@ -43,6 +43,15 @@ class Config:
         self.enable_archive_inspection = True
         self.ocr_languages = ["eng"]
         
+        # New settings for performance and feedback
+        self.enable_content_cache = True
+        self.content_cache_size = 500
+        self.enable_feedback_system = True
+        self.feedback_dir_name = "feedback"
+        self.embedding_similarity_threshold = 0.3
+        self.enable_embedding_cache = True
+        self.embedding_cache_size = 1000
+        
         # Load from file if provided
         if config_path:
             self.load_config(config_path)
@@ -56,6 +65,7 @@ class Config:
         self.organized_dir = os.path.join(self.base_dir, self.organized_dir_name)
         self.log_file = os.path.join(self.base_dir, self.log_file_name)
         self.config_file = os.path.join(self.base_dir, "config.json")
+        self.feedback_dir = os.path.join(self.base_dir, self.feedback_dir_name)
         
     def load_config(self, config_path):
         """
@@ -105,6 +115,18 @@ class Config:
             self.enable_archive_inspection = file_types.get('enable_archive_inspection', self.enable_archive_inspection)
             self.ocr_languages = file_types.get('ocr_languages', self.ocr_languages)
             
+            # Performance and feedback settings
+            performance = config.get('performance', {})
+            self.enable_content_cache = performance.get('enable_content_cache', self.enable_content_cache)
+            self.content_cache_size = performance.get('content_cache_size', self.content_cache_size)
+            self.enable_embedding_cache = performance.get('enable_embedding_cache', self.enable_embedding_cache)
+            self.embedding_cache_size = performance.get('embedding_cache_size', self.embedding_cache_size)
+            
+            feedback = config.get('feedback', {})
+            self.enable_feedback_system = feedback.get('enable_feedback_system', self.enable_feedback_system)
+            self.feedback_dir_name = feedback.get('feedback_dir_name', self.feedback_dir_name)
+            self.embedding_similarity_threshold = feedback.get('embedding_similarity_threshold', self.embedding_similarity_threshold)
+            
         except Exception as e:
             print(f"Error loading config from {config_path}: {e}")
             print("Using default configuration")
@@ -141,6 +163,17 @@ class Config:
                 'enable_video_analysis': self.enable_video_analysis,
                 'enable_archive_inspection': self.enable_archive_inspection,
                 'ocr_languages': self.ocr_languages
+            },
+            'performance': {
+                'enable_content_cache': self.enable_content_cache,
+                'content_cache_size': self.content_cache_size,
+                'enable_embedding_cache': self.enable_embedding_cache,
+                'embedding_cache_size': self.embedding_cache_size
+            },
+            'feedback': {
+                'enable_feedback_system': self.enable_feedback_system,
+                'feedback_dir_name': self.feedback_dir_name,
+                'embedding_similarity_threshold': self.embedding_similarity_threshold
             }
         }
         
@@ -161,8 +194,23 @@ class Config:
         if not os.path.exists(self.organized_dir):
             os.makedirs(self.organized_dir)
             
+        # Create feedback directory if enabled
+        if self.enable_feedback_system and not os.path.exists(self.feedback_dir):
+            os.makedirs(self.feedback_dir)
+            # Create 'recent' subdirectory
+            recent_dir = os.path.join(self.feedback_dir, "recent")
+            if not os.path.exists(recent_dir):
+                os.makedirs(recent_dir)
+            
         # Create category directories
         for category in self.categories:
+            # In organized directory
             category_dir = os.path.join(self.organized_dir, category)
             if not os.path.exists(category_dir):
                 os.makedirs(category_dir)
+                
+            # In feedback directory if enabled
+            if self.enable_feedback_system:
+                feedback_category_dir = os.path.join(self.feedback_dir, category)
+                if not os.path.exists(feedback_category_dir):
+                    os.makedirs(feedback_category_dir)
