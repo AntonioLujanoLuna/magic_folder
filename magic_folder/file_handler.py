@@ -74,7 +74,7 @@ class FileHandler(FileSystemEventHandler):
             
         if os.path.exists(self.feedback_file):
             try:
-                with open(self.feedback_file, 'r') as f:
+                with open(self.feedback_file, 'r', encoding='utf-8') as f:
                     return json.load(f)
             except Exception as e:
                 log_activity(f"Error loading feedback data: {e}")
@@ -88,7 +88,7 @@ class FileHandler(FileSystemEventHandler):
     def _save_feedback_data(self):
         """Save feedback data to the JSON file"""
         try:
-            with open(self.feedback_file, 'w') as f:
+            with open(self.feedback_file, 'w', encoding='utf-8') as f:
                 json.dump(self.feedback_data, f, indent=4)
         except Exception as e:
             log_activity(f"Error saving feedback data: {e}")

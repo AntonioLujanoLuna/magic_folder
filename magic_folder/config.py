@@ -75,7 +75,7 @@ class Config:
             config_path (str): Path to the configuration file
         """
         try:
-            with open(config_path, 'r') as f:
+            with open(config_path, 'r', encoding='utf-8') as f:
                 config = json.load(f)
                 
             # Base settings
@@ -177,7 +177,7 @@ class Config:
             }
         }
         
-        with open(self.config_file, 'w') as f:
+        with open(self.config_file, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=4)
             
     def ensure_directories(self):

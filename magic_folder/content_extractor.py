@@ -5,6 +5,7 @@ Enhanced content extraction from various file types
 import os
 import io
 import re
+import platform
 import magic
 import pickle
 import hashlib
@@ -49,13 +50,25 @@ class ContentExtractor:
         # Check Tesseract availability
         self.tesseract_available = False
         if TESSERACT_AVAILABLE:
+            # Set Tesseract executable path for Windows
+            if platform.system() == 'Windows':
+                possible_paths = [
+                    r'C:\Program Files\Tesseract-OCR\tesseract.exe',
+                    r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
+                ]
+                for path in possible_paths:
+                    if os.path.exists(path):
+                        pytesseract.pytesseract.tesseract_cmd = path
+                        log_activity(f"Set Tesseract path to: {path}")
+                        break
+            
             try:
                 # Test if Tesseract is actually executable
                 pytesseract.get_tesseract_version()
                 self.tesseract_available = True
                 log_activity("Tesseract OCR detected and ready")
-            except Exception:
-                log_activity("Tesseract OCR not found - OCR features disabled")
+            except Exception as e:
+                log_activity(f"Tesseract OCR not found - OCR features disabled. Error: {e}")
         
         # Initialize content cache
         self.cache_file = os.path.join(config.base_dir, "content_cache.pkl")

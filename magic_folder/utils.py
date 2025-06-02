@@ -37,7 +37,7 @@ def log_activity(message):
         if log_dir and not os.path.exists(log_dir):
             os.makedirs(log_dir)
             
-        with open(LOG_FILE, 'a') as f:
+        with open(LOG_FILE, 'a', encoding='utf-8') as f:
             f.write(log_entry + "\n")
 
 def get_file_size_str(size_bytes):

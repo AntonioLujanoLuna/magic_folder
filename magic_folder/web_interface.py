@@ -119,7 +119,7 @@ def update_statistics():
     log_file = config.log_file
     activity_log = []
     if os.path.exists(log_file):
-        with open(log_file, 'r') as f:
+        with open(log_file, 'r', encoding='utf-8') as f:
             for line in f.readlines()[-50:]:  # Get last 50 lines
                 activity_log.append(line.strip())
         activity_log.reverse()  # Most recent first
@@ -407,7 +407,7 @@ def generate_report(date):
     # Get activity log for the day
     log_file = config.log_file
     if os.path.exists(log_file):
-        with open(log_file, 'r') as f:
+        with open(log_file, 'r', encoding='utf-8') as f:
             for line in f:
                 # Parse log line to extract date
                 try:
