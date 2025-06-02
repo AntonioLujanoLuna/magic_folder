@@ -62,38 +62,39 @@ def check_package(package):
 def check_tesseract():
     """Check if Tesseract OCR is installed"""
     if shutil.which("tesseract"):
-        print_status("Tesseract OCR detected")
-        return True
-    print_status("Tesseract OCR not found", False)
+        try:
+            # Actually test if it works
+            result = subprocess.run(['tesseract', '--version'], 
+                                  capture_output=True, text=True)
+            if result.returncode == 0:
+                print_status("Tesseract OCR detected")
+                return True
+        except:
+            pass
+    
+    print_status("Tesseract OCR not found (optional)", False)
+    print("\n  📝 Note: Tesseract enables text extraction from images.")
+    print("  Without it, Magic Folder will still work but won't read text from images/PDFs.")
+    print("\n  To install Tesseract (optional):")
+    print_tesseract_instructions()
+    print("\n  You can install it later if needed.\n")
     return False
 
-def suggest_tesseract_install():
-    """Provide instructions for installing Tesseract OCR"""
+def print_tesseract_instructions():
+    """Print clean installation instructions"""
     system = platform.system().lower()
     
-    print("\nTesseract OCR is required for processing images and PDFs with OCR.")
-    print("Installation instructions:")
-    
     if system == "darwin":  # macOS
-        print("\n  macOS (using Homebrew):")
-        print("  brew install tesseract")
+        print("    macOS: brew install tesseract")
     elif system == "linux":
-        if os.path.exists("/etc/debian_version"):  # Debian/Ubuntu
-            print("\n  Ubuntu/Debian:")
-            print("  sudo apt-get install tesseract-ocr")
-        elif os.path.exists("/etc/fedora-release"):  # Fedora
-            print("\n  Fedora:")
-            print("  sudo dnf install tesseract")
-        else:
-            print("\n  Linux (package manager varies):")
-            print("  Search for tesseract-ocr in your package manager")
+        print("    Ubuntu/Debian: sudo apt-get install tesseract-ocr")
+        print("    Fedora: sudo dnf install tesseract")
+        print("    Arch: sudo pacman -S tesseract")
     elif system == "windows":
-        print("\n  Windows:")
-        print("  1. Download installer from https://github.com/UB-Mannheim/tesseract/wiki")
-        print("  2. Run the installer and follow instructions")
-        print("  3. Add Tesseract to your PATH environment variable")
-    
-    print("\nAfter installing Tesseract, run this installer again.")
+        print("    Windows:")
+        print("    1. Download from: https://github.com/UB-Mannheim/tesseract/wiki")
+        print("    2. Run the installer")
+        print("    3. Add to PATH during installation (checkbox in installer)")
 
 def install_dependencies():
     """Install required Python packages"""

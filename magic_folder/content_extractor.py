@@ -29,13 +29,6 @@ except ImportError:
     TESSERACT_AVAILABLE = False
     pytesseract = None
 
-try:
-    import textract
-    TEXTRACT_AVAILABLE = True
-except ImportError:
-    TEXTRACT_AVAILABLE = False
-    textract = None
-
 class ContentExtractor:
     """Extracts content from various file types"""
     
@@ -54,17 +47,15 @@ class ContentExtractor:
         self.enable_archives = config.enable_archive_inspection
         
         # Check Tesseract availability
-        self.tesseract_available = TESSERACT_AVAILABLE
+        self.tesseract_available = False
         if TESSERACT_AVAILABLE:
             try:
                 # Test if Tesseract is actually executable
                 pytesseract.get_tesseract_version()
-            except Exception as e:
-                log_activity(f"Tesseract OCR not properly installed: {e}")
-                self.tesseract_available = False
-        
-        if not self.tesseract_available:
-            log_activity("Warning: Tesseract OCR not available. Image text extraction will be limited.")
+                self.tesseract_available = True
+                log_activity("Tesseract OCR detected and ready")
+            except Exception:
+                log_activity("Tesseract OCR not found - OCR features disabled")
         
         # Initialize content cache
         self.cache_file = os.path.join(config.base_dir, "content_cache.pkl")
@@ -476,27 +467,21 @@ class ContentExtractor:
             metadata += f"Size: {image.width}x{image.height}\n"
             metadata += f"Mode: {image.mode}\n\n"
             
-            # Check if Tesseract is available for OCR
-            if not self.tesseract_available:
-                return metadata + "OCR Text: [Tesseract OCR not available - install pytesseract and tesseract]"
-            
-            try:
-                # Perform OCR with specified languages
-                text = pytesseract.image_to_string(image, lang=self.ocr_languages)
-                return metadata + "OCR Text:\n" + text[:self.sample_length]
-            except pytesseract.TesseractNotFoundError:
-                log_activity("Tesseract executable not found. Please install Tesseract OCR.")
-                return metadata + "OCR Text: [Tesseract executable not found]"
-            except pytesseract.TesseractError as e:
-                log_activity(f"Tesseract OCR error: {e}")
-                return metadata + f"OCR Text: [OCR error: {e}]"
-            except Exception as e:
-                log_activity(f"Image OCR error: {e}")
-                return metadata + f"OCR Text: [OCR processing failed: {e}]"
-                
+            # Only attempt OCR if Tesseract is available
+            if self.tesseract_available:
+                try:
+                    text = pytesseract.image_to_string(image, lang=self.ocr_languages)
+                    return metadata + "OCR Text:\n" + text[:self.sample_length]
+                except Exception as e:
+                    log_activity(f"OCR failed for {os.path.basename(file_path)}: {str(e)[:50]}")
+                    return metadata + "OCR Text: [OCR failed - check logs]"
+            else:
+                # Don't make it sound like an error - just note the limitation
+                return metadata + "[Image content - install Tesseract for text extraction]"
+                    
         except Exception as e:
             log_activity(f"Image processing error: {e}")
-            return f"Image file: {os.path.basename(file_path)} [Could not process image: {e}]"
+            return f"Image file: {os.path.basename(file_path)}"
     
     def _extract_from_audio(self, file_path):
         """

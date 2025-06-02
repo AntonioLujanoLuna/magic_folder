@@ -25,13 +25,13 @@ A local AI-powered file organization system that automatically categorizes and r
 ### Prerequisites
 
 - Python 3.8 or higher
-- Tesseract OCR (for image processing)
+- Optional: Tesseract OCR for extracting text from images and scanned PDFs
 
 ### Easy Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/magic_folder.git
+git clone https://github.com/AntonioLujanoLuna/magic_folder.git
 cd magic_folder
 
 # Run the installer script
@@ -44,7 +44,7 @@ The installer will check for dependencies and guide you through the setup proces
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/magic_folder.git
+git clone https://github.com/AntonioLujanoLuna/magic_folder.git
 cd magic_folder
 
 # Install the package
