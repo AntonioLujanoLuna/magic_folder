@@ -8,27 +8,23 @@
         "sample_length": 1000
     },
     "categories": [
-        "taxes", 
-        "receipts",
-        "personal_id", 
+        "financial", 
+        "identity",
         "medical", 
         "work", 
         "education", 
-        "financial", 
         "legal", 
         "correspondence",
         "other"
     ],
     "category_keywords": {
-        "taxes": ["tax", "taxes", "irs", "return", "w-2", "w2", "1099", "deduction"],
-        "receipts": ["receipt", "purchase", "order", "transaction", "payment"],
-        "personal_id": ["passport", "license", "id", "identification", "birth", "certificate", "ssn"],
-        "medical": ["medical", "health", "doctor", "prescription", "hospital", "insurance"],
-        "work": ["work", "job", "employment", "resume", "cv", "career", "position", "salary"],
-        "education": ["education", "school", "university", "college", "degree", "transcript", "diploma"],
-        "financial": ["bank", "statement", "account", "finance", "investment", "stock", "dividend", "saving"],
-        "legal": ["legal", "contract", "agreement", "law", "attorney", "court", "case", "will", "estate"],
-        "correspondence": ["letter", "email", "correspondence", "memo", "communication"],
+        "financial": ["tax", "taxes", "irs", "return", "w-2", "w2", "1099", "deduction", "receipt", "purchase", "order", "transaction", "payment", "bank", "statement", "account", "finance", "investment", "stock", "dividend", "saving"],
+        "identity": ["passport", "license", "id", "identification", "birth", "certificate", "ssn", "social security"],
+        "medical": ["medical", "health", "doctor", "prescription", "hospital", "insurance", "healthcare", "clinic"],
+        "work": ["work", "job", "employment", "resume", "cv", "career", "position", "salary", "employment", "payroll"],
+        "education": ["education", "school", "university", "college", "degree", "transcript", "diploma", "academic", "course"],
+        "legal": ["legal", "contract", "agreement", "law", "attorney", "court", "case", "will", "estate", "lawsuit"],
+        "correspondence": ["letter", "email", "correspondence", "memo", "communication", "message", "mail"],
         "other": []
     },
     "excluded_extensions": [".tmp", ".part", ".crdownload"],
@@ -47,5 +43,19 @@
         "enable_video_analysis": true,
         "enable_archive_inspection": true,
         "ocr_languages": ["eng"]
+    },
+    "performance": {
+        "enable_content_cache": true,
+        "content_cache_size": 500,
+        "enable_embedding_cache": true,
+        "embedding_cache_size": 1000
+    },
+    "feedback": {
+        "enable_feedback_system": true,
+        "feedback_dir_name": "feedback",
+        "embedding_similarity_threshold": 0.3
+    },
+    "web": {
+        "secret_key": null
     }
 }

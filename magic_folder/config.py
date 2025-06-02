@@ -23,8 +23,8 @@ class Config:
         self.log_file_name = "activity_log.txt"
         self.model_name = "distilbert-base-uncased"
         self.sample_length = 1000
-        self.categories = ["taxes", "receipts", "personal_id", "medical", 
-                          "work", "education", "financial", "legal", 
+        self.categories = ["financial", "identity", "medical", 
+                          "work", "education", "legal", 
                           "correspondence", "other"]
         self.category_keywords = {}
         self.excluded_extensions = ['.tmp', '.part', '.crdownload']
@@ -51,6 +51,9 @@ class Config:
         self.embedding_similarity_threshold = 0.3
         self.enable_embedding_cache = True
         self.embedding_cache_size = 1000
+        
+        # Web interface settings
+        self.secret_key = None
         
         # Load from file if provided
         if config_path:
@@ -127,6 +130,10 @@ class Config:
             self.feedback_dir_name = feedback.get('feedback_dir_name', self.feedback_dir_name)
             self.embedding_similarity_threshold = feedback.get('embedding_similarity_threshold', self.embedding_similarity_threshold)
             
+            # Web interface settings
+            web = config.get('web', {})
+            self.secret_key = web.get('secret_key', self.secret_key)
+            
         except Exception as e:
             print(f"Error loading config from {config_path}: {e}")
             print("Using default configuration")
@@ -174,6 +181,9 @@ class Config:
                 'enable_feedback_system': self.enable_feedback_system,
                 'feedback_dir_name': self.feedback_dir_name,
                 'embedding_similarity_threshold': self.embedding_similarity_threshold
+            },
+            'web': {
+                'secret_key': self.secret_key
             }
         }
         

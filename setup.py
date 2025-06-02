@@ -46,6 +46,8 @@ setup(
         "mutagen",
         "flask",
         "apscheduler",
+        "textract",
+        "werkzeug",
     ],
     entry_points={
         "console_scripts": [

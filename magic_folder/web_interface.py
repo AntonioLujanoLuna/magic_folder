@@ -6,6 +6,7 @@ Provides visualization, statistics, and management capabilities
 import os
 import json
 import datetime
+import time
 from pathlib import Path
 from collections import defaultdict, Counter
 import threading
@@ -17,13 +18,41 @@ from werkzeug.utils import secure_filename
 from magic_folder.config import Config
 from magic_folder.analyzer import AIAnalyzer
 from magic_folder.file_handler import FileHandler
-from magic_folder.utils import log_activity, set_log_file
+from magic_folder.utils import log_activity, set_log_file, validate_config_values
+
+# File upload settings
+ALLOWED_EXTENSIONS = {'pdf', 'txt', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'xlsx', 'xls', 'csv', 'ppt', 'pptx', 'mp3', 'mp4', 'avi', 'mov', 'zip', 'rar', '7z'}
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+MAX_FILES_PER_UPLOAD = 10  # Maximum files per upload
+UPLOAD_RATE_LIMIT = 5  # Maximum uploads per minute per IP
+
+# Simple rate limiting tracking
+upload_tracking = defaultdict(list)
+
+def allowed_file(filename):
+    """Check if the uploaded file has an allowed extension"""
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def check_rate_limit(ip_address):
+    """Check if the IP address has exceeded the upload rate limit"""
+    now = time.time()
+    # Clean old entries (older than 1 minute)
+    upload_tracking[ip_address] = [t for t in upload_tracking[ip_address] if now - t < 60]
+    
+    # Check if rate limit exceeded
+    if len(upload_tracking[ip_address]) >= UPLOAD_RATE_LIMIT:
+        return False
+    
+    # Record this upload attempt
+    upload_tracking[ip_address].append(now)
+    return True
 
 # Initialize Flask app
 app = Flask(__name__, 
            template_folder=os.path.join(os.path.dirname(__file__), 'web', 'templates'),
            static_folder=os.path.join(os.path.dirname(__file__), 'web', 'static'))
-app.secret_key = os.urandom(24)
+# Secret key will be set after config is loaded
 
 # Global variables
 config = None
@@ -46,6 +75,18 @@ def setup_app(config_path=None):
     
     # Initialize configuration
     config = Config(config_path)
+    
+    # Validate configuration
+    config_errors = validate_config_values(config)
+    if config_errors:
+        for error in config_errors:
+            log_activity(f"Configuration error: {error}")
+    
+    # Set up persistent secret key
+    if not config.secret_key:
+        config.secret_key = os.urandom(24).hex()
+        config.save_config()
+    app.secret_key = config.secret_key
     
     # Initialize logging system with the config's log file
     set_log_file(config.log_file)
@@ -73,75 +114,81 @@ def update_statistics():
     if not config:
         return
     
-    # Count files in each category
-    category_counts = {}
-    total_files = 0
-    for category in config.categories:
-        category_dir = os.path.join(config.organized_dir, category)
-        if os.path.exists(category_dir):
-            files = [f for f in os.listdir(category_dir) if os.path.isfile(os.path.join(category_dir, f))]
-            category_counts[category] = len(files)
-            total_files += len(files)
-        else:
-            category_counts[category] = 0
-    
-    # Calculate percentages
-    category_breakdown = {}
-    for category, count in category_counts.items():
-        percentage = (count / total_files * 100) if total_files > 0 else 0
-        category_breakdown[category] = {
-            'count': count,
-            'percentage': round(percentage, 1)
-        }
-    
-    # Get recent files
-    recent_files = []
-    for category in config.categories:
-        category_dir = os.path.join(config.organized_dir, category)
-        if os.path.exists(category_dir):
-            files = [os.path.join(category_dir, f) for f in os.listdir(category_dir) 
-                    if os.path.isfile(os.path.join(category_dir, f))]
-            files.sort(key=os.path.getmtime, reverse=True)
-            for file_path in files[:5]:  # Get 5 most recent files from each category
-                file_name = os.path.basename(file_path)
-                recent_files.append({
-                    'name': file_name,
-                    'category': category,
-                    'modified': datetime.datetime.fromtimestamp(os.path.getmtime(file_path)),
-                    'size': os.path.getsize(file_path)
-                })
-    
-    # Sort by modification time
-    recent_files.sort(key=lambda x: x['modified'], reverse=True)
-    recent_files = recent_files[:20]  # Keep only 20 most recent overall
-    
-    # Get activity log
-    log_file = config.log_file
-    activity_log = []
-    if os.path.exists(log_file):
-        with open(log_file, 'r', encoding='utf-8') as f:
-            for line in f.readlines()[-50:]:  # Get last 50 lines
-                activity_log.append(line.strip())
-        activity_log.reverse()  # Most recent first
-    
-    # Count file types
-    file_types = Counter()
-    for category in config.categories:
-        category_dir = os.path.join(config.organized_dir, category)
-        if os.path.exists(category_dir):
-            for file in os.listdir(category_dir):
-                if os.path.isfile(os.path.join(category_dir, file)):
-                    _, ext = os.path.splitext(file)
-                    if ext:
-                        file_types[ext.lower()] += 1
-    
-    # Update stats dictionary
-    stats['categories'] = category_counts
-    stats['category_breakdown'] = category_breakdown
-    stats['recent_files'] = recent_files
-    stats['activity_log'] = activity_log
-    stats['file_types'] = file_types
-    stats['last_updated'] = datetime.datetime.now()
+    try:
+        # Count files in each category
+        category_counts = {}
+        total_files = 0
+        for category in config.categories:
+            category_dir = os.path.join(config.organized_dir, category)
+            if os.path.exists(category_dir):
+                files = [f for f in os.listdir(category_dir) if os.path.isfile(os.path.join(category_dir, f))]
+                category_counts[category] = len(files)
+                total_files += len(files)
+            else:
+                category_counts[category] = 0
+        
+        # Calculate percentages
+        category_breakdown = {}
+        for category, count in category_counts.items():
+            percentage = (count / total_files * 100) if total_files > 0 else 0
+            category_breakdown[category] = {
+                'count': count,
+                'percentage': round(percentage, 1)
+            }
+        
+        # Get recent files
+        recent_files = []
+        for category in config.categories:
+            category_dir = os.path.join(config.organized_dir, category)
+            if os.path.exists(category_dir):
+                files = [os.path.join(category_dir, f) for f in os.listdir(category_dir) 
+                        if os.path.isfile(os.path.join(category_dir, f))]
+                files.sort(key=os.path.getmtime, reverse=True)
+                for file_path in files[:5]:  # Get 5 most recent files from each category
+                    file_name = os.path.basename(file_path)
+                    recent_files.append({
+                        'name': file_name,
+                        'category': category,
+                        'modified': datetime.datetime.fromtimestamp(os.path.getmtime(file_path)),
+                        'size': os.path.getsize(file_path)
+                    })
+        
+        # Sort by modification time
+        recent_files.sort(key=lambda x: x['modified'], reverse=True)
+        recent_files = recent_files[:20]  # Keep only 20 most recent overall
+        
+        # Get activity log
+        log_file = config.log_file
+        activity_log = []
+        if os.path.exists(log_file):
+            with open(log_file, 'r', encoding='utf-8') as f:
+                for line in f.readlines()[-50:]:  # Get last 50 lines
+                    activity_log.append(line.strip())
+            activity_log.reverse()  # Most recent first
+        
+        # Count file types
+        file_types = Counter()
+        for category in config.categories:
+            category_dir = os.path.join(config.organized_dir, category)
+            if os.path.exists(category_dir):
+                for file in os.listdir(category_dir):
+                    if os.path.isfile(os.path.join(category_dir, file)):
+                        _, ext = os.path.splitext(file)
+                        if ext:
+                            file_types[ext.lower()] += 1
+        
+        # Update stats dictionary
+        stats['categories'] = category_counts
+        stats['category_breakdown'] = category_breakdown
+        stats['recent_files'] = recent_files
+        stats['activity_log'] = activity_log
+        stats['file_types'] = file_types
+        stats['last_updated'] = datetime.datetime.now()
+        
+    except Exception as e:
+        log_activity(f"Error updating statistics: {e}")
+        # Set minimal stats to prevent errors
+        stats['last_updated'] = datetime.datetime.now()
 
 @app.route('/')
 def index():
@@ -230,24 +277,70 @@ def files():
 def upload():
     """Upload files for processing"""
     if request.method == 'POST':
+        # Check rate limit
+        client_ip = request.environ.get('REMOTE_ADDR', '127.0.0.1')
+        if not check_rate_limit(client_ip):
+            flash('Upload rate limit exceeded. Please wait a minute before uploading again.', 'error')
+            return redirect(request.url)
+        
         if 'files[]' not in request.files:
             flash('No file part')
             return redirect(request.url)
         
         files = request.files.getlist('files[]')
         
+        # Check maximum files per upload
+        if len(files) > MAX_FILES_PER_UPLOAD:
+            flash(f'Too many files. Maximum {MAX_FILES_PER_UPLOAD} files per upload.', 'error')
+            return redirect(request.url)
+        
+        uploaded_count = 0
+        
         for file in files:
             if file.filename == '':
-                flash('No selected file')
-                return redirect(request.url)
+                continue
             
-            if file:
+            # Validate file type
+            if not allowed_file(file.filename):
+                flash(f'File type not allowed: {file.filename}', 'error')
+                continue
+            
+            # Check file size (Flask doesn't enforce MAX_CONTENT_LENGTH for individual files in lists)
+            file.seek(0, 2)  # Seek to end
+            file_size = file.tell()
+            file.seek(0)  # Reset to beginning
+            
+            if file_size > MAX_FILE_SIZE:
+                flash(f'File too large (max {MAX_FILE_SIZE // (1024*1024)}MB): {file.filename}', 'error')
+                continue
+            
+            try:
                 filename = secure_filename(file.filename)
                 upload_path = os.path.join(config.drop_dir, filename)
+                
+                # Check if file already exists and handle duplicates
+                if os.path.exists(upload_path):
+                    base, ext = os.path.splitext(filename)
+                    counter = 1
+                    while os.path.exists(upload_path):
+                        new_filename = f"{base}_{counter}{ext}"
+                        upload_path = os.path.join(config.drop_dir, new_filename)
+                        counter += 1
+                    filename = os.path.basename(upload_path)
+                
                 file.save(upload_path)
                 log_activity(f"File uploaded via web interface: {filename}")
+                uploaded_count += 1
+                
+            except Exception as e:
+                log_activity(f"Error uploading {file.filename}: {e}")
+                flash(f'Error uploading {file.filename}: {str(e)}', 'error')
         
-        flash(f"{len(files)} files uploaded successfully")
+        if uploaded_count > 0:
+            flash(f"{uploaded_count} files uploaded successfully")
+        else:
+            flash('No files were uploaded', 'warning')
+            
         return redirect(url_for('index'))
     
     return render_template('upload.html', config=config)

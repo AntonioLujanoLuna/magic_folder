@@ -30,6 +30,13 @@ except ImportError:
     TESSERACT_AVAILABLE = False
     pytesseract = None
 
+try:
+    import textract
+    TEXTRACT_AVAILABLE = True
+except ImportError:
+    TEXTRACT_AVAILABLE = False
+    textract = None
+
 class ContentExtractor:
     """Extracts content from various file types"""
     
@@ -248,8 +255,9 @@ class ContentExtractor:
                     # Get text content (simplified approach)
                     text = ElementTree.tostring(tree.getroot(), encoding='unicode', method='text')
                     return text[:self.sample_length]
-                except:
+                except (ElementTree.ParseError, OSError, UnicodeDecodeError) as e:
                     # Fallback to regular text extraction if parsing fails
+                    log_activity(f"XML/HTML parsing failed for {file_path}: {e}")
                     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                         return f.read(self.sample_length)
             
@@ -272,12 +280,13 @@ class ContentExtractor:
                     for encoding in ['utf-8', 'latin-1', 'cp1252', 'ascii']:
                         try:
                             return binary_data.decode(encoding)[:self.sample_length]
-                        except:
+                        except (UnicodeDecodeError, UnicodeError):
                             continue
                     
                     # If all encodings fail, return hexdump as last resort
                     return f"Binary data: {binary_data.hex()[:100]}..."
-            except:
+            except Exception as e:
+                log_activity(f"Binary data extraction error: {e}")
                 return ""
     
     def _extract_from_pdf(self, file_path):
@@ -335,15 +344,15 @@ class ContentExtractor:
                             lang=self.ocr_languages
                         )
                         text += "\nOCR Results:\n" + ocr_text
-                    except:
-                        log_activity("OCR on PDF failed or pdftoppm not available")
+                    except Exception as e:
+                        log_activity(f"OCR on PDF failed or pdftoppm not available: {e}")
                     
                     # Clean up
                     try:
                         os.unlink(temp_path)
                         os.unlink(f"{temp_path[:-4]}.png")
-                    except:
-                        pass
+                    except Exception as e:
+                        log_activity(f"Cleanup error: {e}")
                         
                 except Exception as e:
                     log_activity(f"PDF OCR error: {e}")
@@ -605,8 +614,9 @@ class ContentExtractor:
                         metadata += "\nMetadata Tags:\n"
                         for key, value in tags.items():
                             metadata += f"{key}: {value}\n"
-            except:
+            except Exception as e:
                 # If ffprobe fails, provide basic info
+                log_activity(f"ffprobe failed for {file_path}: {e}")
                 file_size = os.path.getsize(file_path)
                 metadata += f"File size: {file_size} bytes\n"
             
@@ -653,7 +663,8 @@ class ContentExtractor:
                                 try:
                                     content = f.read(1024).decode('utf-8', errors='ignore')
                                     result += content[:200] + "...\n"
-                                except:
+                                except Exception as e:
+                                    log_activity(f"Error reading archive file {text_file}: {e}")
                                     result += "[Binary content]\n"
             
             # Handle TAR files (including .tar.gz)
@@ -684,9 +695,11 @@ class ContentExtractor:
                                         if f:  # Some tar files have directories listed
                                             content = f.read(1024).decode('utf-8', errors='ignore')
                                             result += content[:200] + "...\n"
-                                except:
+                                except Exception as e:
+                                    log_activity(f"Error extracting from tar file {text_file}: {e}")
                                     result += "[Could not extract content]\n"
-                except:
+                except Exception as e:
+                    log_activity(f"Could not open tar archive {file_path}: {e}")
                     result += "Could not open as tar archive. May be corrupted or unsupported format.\n"
             
             # Handle other archive types (basic info only)
