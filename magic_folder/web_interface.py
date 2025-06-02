@@ -35,7 +35,8 @@ stats = {
     'activity_log': [],
     'category_breakdown': {},
     'keyword_counts': defaultdict(Counter),
-    'file_types': Counter()
+    'file_types': Counter(),
+    'last_updated': datetime.datetime.now()
 }
 scheduler = BackgroundScheduler()
 

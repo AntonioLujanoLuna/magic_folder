@@ -178,12 +178,12 @@
         }]
     };
 
-    // Prepare data for file types chart
-    const fileTypesData = {
-        labels: [{% for ext, count in stats.file_types|dictsort(by='value')|reverse|slice(10) %}'{{ ext }}',{% endfor %}],
+        // Prepare data for file types chart
+        const fileTypesData = {
+        labels: [{% if stats.file_types %}{% for ext, count in stats.file_types|dictsort(by='value')|reverse|slice(10) %}'{{ ext }}',{% endfor %}{% endif %}],
         datasets: [{
             label: 'Count',
-            data: [{% for ext, count in stats.file_types|dictsort(by='value')|reverse|slice(10) %}{{ count }},{% endfor %}],
+            data: [{% if stats.file_types %}{% for ext, count in stats.file_types|dictsort(by='value')|reverse|slice(10) %}{{ count }},{% endfor %}{% endif %}],
             backgroundColor: 'rgba(54, 162, 235, 0.7)',
             borderColor: 'rgba(54, 162, 235, 1)',
             borderWidth: 1
