@@ -1,0 +1,10 @@
+include README.md
+include requirements.txt
+include config/*.json
+recursive-include magic_folder/config *.json
+recursive-include magic_folder/web/templates *.html
+recursive-include magic_folder/web/static *.css *.js *.png *.jpg *.gif *.ico
+global-exclude *.pyc
+global-exclude __pycache__
+global-exclude .git*
+global-exclude *.tmp 

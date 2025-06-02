@@ -29,9 +29,15 @@
         <div class="card h-100 card-hover">
             <div class="card-body">
                 <h5 class="card-title text-success"><i class="bi bi-folder"></i> Top Category</h5>
-                {% set top_category = stats.categories|dictsort(by='value')|reverse|first %}
-                <p class="card-text display-6">{{ top_category[0] }}</p>
-                <p class="text-muted">{{ top_category[1] }} files ({{ (top_category[1] / (stats.categories.values()|sum) * 100)|round|int }}%)</p>
+                {% set total_files = stats.categories.values()|sum %}
+                {% if total_files > 0 %}
+                    {% set top_category = stats.categories|dictsort(by='value')|reverse|first %}
+                    <p class="card-text display-6">{{ top_category[0] }}</p>
+                    <p class="text-muted">{{ top_category[1] }} files ({{ (top_category[1] / total_files * 100)|round|int }}%)</p>
+                {% else %}
+                    <p class="card-text display-6">No files yet</p>
+                    <p class="text-muted">Start by dropping files into the folder</p>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -174,10 +180,10 @@
 
     // Prepare data for file types chart
     const fileTypesData = {
-        labels: [{% for ext, count in stats.file_types.items()|dictsort(by='value')|reverse|slice(10) %}'{{ ext }}',{% endfor %}],
+        labels: [{% for ext, count in stats.file_types|dictsort(by='value')|reverse|slice(10) %}'{{ ext }}',{% endfor %}],
         datasets: [{
             label: 'Count',
-            data: [{% for ext, count in stats.file_types.items()|dictsort(by='value')|reverse|slice(10) %}{{ count }},{% endfor %}],
+            data: [{% for ext, count in stats.file_types|dictsort(by='value')|reverse|slice(10) %}{{ count }},{% endfor %}],
             backgroundColor: 'rgba(54, 162, 235, 0.7)',
             borderColor: 'rgba(54, 162, 235, 1)',
             borderWidth: 1

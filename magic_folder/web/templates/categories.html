@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+
+{% block title %}Categories - Magic Folder{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Categories</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="/files" class="btn btn-sm btn-outline-secondary">Browse Files</a>
+            <a href="/settings" class="btn btn-sm btn-outline-secondary">Settings</a>
+        </div>
+    </div>
+</div>
+
+<!-- Category Overview -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-header">
+                <h5 class="card-title mb-0"><i class="bi bi-folder-fill"></i> Category Overview</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for category in config.categories %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100 category-card">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <i class="bi bi-folder"></i> {{ category|title }}
+                                </h6>
+                                <p class="card-text">
+                                    <span class="badge bg-primary">
+                                        {% if stats.categories[category] is defined %}
+                                            {{ stats.categories[category] }}
+                                        {% else %}
+                                            0
+                                        {% endif %}
+                                        files
+                                    </span>
+                                </p>
+                                <div class="mt-2">
+                                    <a href="/files?category={{ category }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i> View Files
+                                    </a>
+                                </div>
+                                
+                                {% if config.category_keywords and config.category_keywords[category] %}
+                                <hr>
+                                <small class="text-muted">
+                                    <strong>Keywords:</strong> 
+                                    {% for keyword in config.category_keywords[category][:5] %}
+                                        <span class="badge bg-light text-dark">{{ keyword }}</span>
+                                    {% endfor %}
+                                    {% if config.category_keywords[category]|length > 5 %}
+                                        <span class="text-muted">...</span>
+                                    {% endif %}
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Category Statistics -->
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-header">
+                <h5 class="card-title mb-0"><i class="bi bi-bar-chart"></i> Category Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="categoryDistributionChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-header">
+                <h5 class="card-title mb-0"><i class="bi bi-info-circle"></i> Category Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% set total_files = stats.categories.values()|sum %}
+                    {% for category in config.categories %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{{ category|title }}</span>
+                        <span>
+                            <span class="badge bg-secondary rounded-pill">
+                                {% if stats.categories[category] is defined %}
+                                    {{ stats.categories[category] }}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </span>
+                            {% if total_files > 0 and stats.categories[category] is defined %}
+                            <small class="text-muted">
+                                ({{ (stats.categories[category] / total_files * 100)|round|int }}%)
+                            </small>
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Information Card -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-header">
+                <h5 class="card-title mb-0"><i class="bi bi-lightbulb"></i> About Categories</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Magic Folder automatically organizes your files into these categories based on their content.
+                    The AI analyzes the text content of each file and classifies it using both machine learning embeddings
+                    and keyword matching.
+                </p>
+                <ul>
+                    <li><strong>AI Model:</strong> {{ config.model_name }}</li>
+                    <li><strong>Total Categories:</strong> {{ config.categories|length }}</li>
+                    <li><strong>Content Sampling:</strong> First {{ config.sample_length }} characters</li>
+                </ul>
+                <div class="mt-3">
+                    <a href="/settings" class="btn btn-primary">
+                        <i class="bi bi-gear"></i> Modify Settings
+                    </a>
+                    <a href="/files" class="btn btn-outline-secondary">
+                        <i class="bi bi-files"></i> Browse All Files
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Prepare data for category distribution chart
+    const categoryData = {
+        labels: [{% for category in config.categories %}'{{ category|title }}',{% endfor %}],
+        datasets: [{
+            label: 'Files',
+            data: [{% for category in config.categories %}{% if stats.categories[category] is defined %}{{ stats.categories[category] }}{% else %}0{% endif %},{% endfor %}],
+            backgroundColor: [
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(255, 206, 86, 0.7)',
+                'rgba(255, 99, 132, 0.7)',
+                'rgba(153, 102, 255, 0.7)',
+                'rgba(255, 159, 64, 0.7)',
+                'rgba(199, 199, 199, 0.7)',
+                'rgba(83, 102, 255, 0.7)',
+                'rgba(40, 159, 64, 0.7)',
+                'rgba(210, 199, 199, 0.7)',
+            ],
+            borderColor: 'rgba(255, 255, 255, 1)',
+            borderWidth: 2
+        }]
+    };
+
+    // Initialize chart when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('categoryDistributionChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: categoryData,
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y + ' files';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+
+<style>
+.category-card {
+    transition: transform 0.2s;
+}
+
+.category-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %} 

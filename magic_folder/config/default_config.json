@@ -1,0 +1,51 @@
+{
+    "base_dir": "~/magic_folder",
+    "drop_dir": "drop",
+    "organized_dir": "organized",
+    "log_file": "activity_log.txt",
+    "model": {
+        "name": "distilbert-base-uncased",
+        "sample_length": 1000
+    },
+    "categories": [
+        "taxes", 
+        "receipts",
+        "personal_id", 
+        "medical", 
+        "work", 
+        "education", 
+        "financial", 
+        "legal", 
+        "correspondence",
+        "other"
+    ],
+    "category_keywords": {
+        "taxes": ["tax", "taxes", "irs", "return", "w-2", "w2", "1099", "deduction"],
+        "receipts": ["receipt", "purchase", "order", "transaction", "payment"],
+        "personal_id": ["passport", "license", "id", "identification", "birth", "certificate", "ssn"],
+        "medical": ["medical", "health", "doctor", "prescription", "hospital", "insurance"],
+        "work": ["work", "job", "employment", "resume", "cv", "career", "position", "salary"],
+        "education": ["education", "school", "university", "college", "degree", "transcript", "diploma"],
+        "financial": ["bank", "statement", "account", "finance", "investment", "stock", "dividend", "saving"],
+        "legal": ["legal", "contract", "agreement", "law", "attorney", "court", "case", "will", "estate"],
+        "correspondence": ["letter", "email", "correspondence", "memo", "communication"],
+        "other": []
+    },
+    "excluded_extensions": [".tmp", ".part", ".crdownload"],
+    "excluded_files": [".DS_Store", "Thumbs.db"],
+    "processing": {
+        "delay_seconds": 1,
+        "check_interval": 0.5
+    },
+    "deduplication": {
+        "enabled": true,
+        "hash_method": "md5",
+        "action": "move"
+    },
+    "advanced_file_types": {
+        "enable_audio_analysis": true,
+        "enable_video_analysis": true,
+        "enable_archive_inspection": true,
+        "ocr_languages": ["eng"]
+    }
+}

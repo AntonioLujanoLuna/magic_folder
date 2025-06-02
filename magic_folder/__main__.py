@@ -7,17 +7,25 @@ import time
 import argparse
 import threading
 from pathlib import Path
-import pkg_resources
+try:
+    # Python 3.9+
+    from importlib.resources import files
+    def get_default_config_path():
+        """Get the path to the default configuration file"""
+        return str(files('magic_folder').joinpath('config', 'default_config.json'))
+except ImportError:
+    # Fallback for older Python versions
+    import pkg_resources
+    def get_default_config_path():
+        """Get the path to the default configuration file"""
+        return pkg_resources.resource_filename('magic_folder', 'config/default_config.json')
+
 from watchdog.observers import Observer
 
 from magic_folder.config import Config
 from magic_folder.analyzer import AIAnalyzer
 from magic_folder.file_handler import FileHandler
 from magic_folder.utils import log_activity
-
-def get_default_config_path():
-    """Get the path to the default configuration file"""
-    return pkg_resources.resource_filename('magic_folder', 'config/default_config.json')
 
 def parse_arguments():
     """Parse command line arguments"""

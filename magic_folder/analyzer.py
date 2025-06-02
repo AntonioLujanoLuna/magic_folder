@@ -7,9 +7,23 @@ import re
 import pickle
 from datetime import datetime
 import numpy as np
-from transformers import AutoTokenizer, AutoModel
-from sentence_transformers import SentenceTransformer
 from magic_folder.utils import log_activity
+
+# Check for optional dependencies and handle import errors
+try:
+    from transformers import AutoTokenizer, AutoModel
+    TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    TRANSFORMERS_AVAILABLE = False
+    AutoTokenizer = None
+    AutoModel = None
+
+try:
+    from sentence_transformers import SentenceTransformer
+    SENTENCE_TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    SENTENCE_TRANSFORMERS_AVAILABLE = False
+    SentenceTransformer = None
 
 class AIAnalyzer:
     """Uses embeddings to analyze file content and determine categories and naming"""
@@ -26,34 +40,70 @@ class AIAnalyzer:
         self.categories = config.categories
         self.category_keywords = config.category_keywords
         self.embedding_model = None
+        self.tokenizer = None
         self.category_embeddings = {}
         self.cache_file = os.path.join(config.base_dir, "embeddings_cache.pkl")
         self.content_cache = {}
+        self.model_available = False
         self.initialize_model()
         
     def initialize_model(self):
-        """Initialize the embedding model"""
+        """Initialize the embedding model with comprehensive error handling"""
+        if not TRANSFORMERS_AVAILABLE and not SENTENCE_TRANSFORMERS_AVAILABLE:
+            log_activity("Warning: Neither transformers nor sentence-transformers available. Using keyword-only classification.")
+            self.model_available = False
+            return
+            
         try:
-            # Try to use sentence-transformers for better embeddings
-            try:
-                self.embedding_model = SentenceTransformer(self.model_name)
-                log_activity("Using SentenceTransformer model for embeddings")
-            except:
-                # Fallback to regular transformer model
-                self.embedding_model = AutoModel.from_pretrained(self.model_name)
-                self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-                log_activity("Using AutoModel for embeddings")
+            # Try to use sentence-transformers for better embeddings first
+            if SENTENCE_TRANSFORMERS_AVAILABLE:
+                try:
+                    log_activity(f"Attempting to load SentenceTransformer model: {self.model_name}")
+                    self.embedding_model = SentenceTransformer(self.model_name)
+                    log_activity("Successfully loaded SentenceTransformer model")
+                    self.model_available = True
+                except Exception as e:
+                    log_activity(f"Failed to load SentenceTransformer model: {e}")
+                    if "Connection error" in str(e) or "timeout" in str(e).lower():
+                        log_activity("Network connection issue. Please check your internet connection.")
+                    elif "No such file or directory" in str(e):
+                        log_activity(f"Model '{self.model_name}' not found. Using fallback approach.")
+                    self.embedding_model = None
             
-            # Load cached embeddings if available
-            self._load_cached_embeddings()
+            # Fallback to regular transformer model if sentence-transformers failed
+            if not self.model_available and TRANSFORMERS_AVAILABLE:
+                try:
+                    log_activity(f"Attempting to load AutoModel: {self.model_name}")
+                    self.embedding_model = AutoModel.from_pretrained(self.model_name)
+                    self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+                    log_activity("Successfully loaded AutoModel")
+                    self.model_available = True
+                except Exception as e:
+                    log_activity(f"Failed to load AutoModel: {e}")
+                    if "Connection error" in str(e) or "timeout" in str(e).lower():
+                        log_activity("Network connection issue. Cannot download model.")
+                    elif "Repository not found" in str(e):
+                        log_activity(f"Model repository '{self.model_name}' not found.")
+                    self.embedding_model = None
+                    self.tokenizer = None
             
-            # Generate category embeddings
-            self._generate_category_embeddings()
-            
-            log_activity("AI model initialized successfully")
+            if self.model_available:
+                # Load cached embeddings if available
+                self._load_cached_embeddings()
+                
+                # Generate category embeddings
+                self._generate_category_embeddings()
+                
+                log_activity("AI model initialized successfully")
+            else:
+                log_activity("AI model initialization failed. Falling back to keyword-only classification.")
+                
         except Exception as e:
-            log_activity(f"Error initializing AI model: {e}")
+            log_activity(f"Unexpected error initializing AI model: {e}")
+            log_activity("Falling back to keyword-only classification.")
             self.embedding_model = None
+            self.tokenizer = None
+            self.model_available = False
             
     def _load_cached_embeddings(self):
         """Load cached embeddings from disk"""

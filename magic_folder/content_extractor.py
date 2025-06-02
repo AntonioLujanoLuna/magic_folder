@@ -17,11 +17,24 @@ import tarfile
 import tempfile
 import subprocess
 import pandas as pd
-import textract
 from PIL import Image
-import pytesseract
 from xml.etree import ElementTree
 from magic_folder.utils import log_activity
+
+# Check for optional dependencies
+try:
+    import pytesseract
+    TESSERACT_AVAILABLE = True
+except ImportError:
+    TESSERACT_AVAILABLE = False
+    pytesseract = None
+
+try:
+    import textract
+    TEXTRACT_AVAILABLE = True
+except ImportError:
+    TEXTRACT_AVAILABLE = False
+    textract = None
 
 class ContentExtractor:
     """Extracts content from various file types"""
@@ -39,6 +52,19 @@ class ContentExtractor:
         self.enable_audio = config.enable_audio_analysis
         self.enable_video = config.enable_video_analysis
         self.enable_archives = config.enable_archive_inspection
+        
+        # Check Tesseract availability
+        self.tesseract_available = TESSERACT_AVAILABLE
+        if TESSERACT_AVAILABLE:
+            try:
+                # Test if Tesseract is actually executable
+                pytesseract.get_tesseract_version()
+            except Exception as e:
+                log_activity(f"Tesseract OCR not properly installed: {e}")
+                self.tesseract_available = False
+        
+        if not self.tesseract_available:
+            log_activity("Warning: Tesseract OCR not available. Image text extraction will be limited.")
         
         # Initialize content cache
         self.cache_file = os.path.join(config.base_dir, "content_cache.pkl")
@@ -163,11 +189,15 @@ class ContentExtractor:
             
             # Fallback to textract for other file types
             else:
-                try:
-                    text = textract.process(file_path).decode('utf-8')
-                    content = text[:self.sample_length]
-                except:
-                    content = f"Unable to extract content from {os.path.basename(file_path)}. File type: {file_type}"
+                if TEXTRACT_AVAILABLE:
+                    try:
+                        text = textract.process(file_path).decode('utf-8')
+                        content = text[:self.sample_length]
+                    except Exception as e:
+                        log_activity(f"Textract extraction failed: {e}")
+                        content = f"Unable to extract content from {os.path.basename(file_path)}. File type: {file_type}"
+                else:
+                    content = f"Unable to extract content from {os.path.basename(file_path)}. File type: {file_type} (textract not available)"
             
             # Cache the result if we have a valid hash
             if file_hash and content:
@@ -338,7 +368,14 @@ class ContentExtractor:
                     text = "\n".join([para.text for para in doc.paragraphs])
                     return text[:self.sample_length]
                 else:  # .doc format
-                    return textract.process(file_path).decode('utf-8')[:self.sample_length]
+                    if TEXTRACT_AVAILABLE:
+                        try:
+                            return textract.process(file_path).decode('utf-8')[:self.sample_length]
+                        except Exception as e:
+                            log_activity(f"Textract extraction for .doc failed: {e}")
+                            return f"DOC file: {os.path.basename(file_path)} (textract extraction failed)"
+                    else:
+                        return f"DOC file: {os.path.basename(file_path)} (textract not available for .doc files)"
                     
             # Excel files
             elif extension in ['.xlsx', '.xls', '.csv']:
@@ -346,13 +383,27 @@ class ContentExtractor:
                 
             # PowerPoint
             elif extension in ['.pptx', '.ppt']:
-                text = textract.process(file_path).decode('utf-8')
-                return text[:self.sample_length]
+                if TEXTRACT_AVAILABLE:
+                    try:
+                        text = textract.process(file_path).decode('utf-8')
+                        return text[:self.sample_length]
+                    except Exception as e:
+                        log_activity(f"Textract extraction for PowerPoint failed: {e}")
+                        return f"PowerPoint file: {os.path.basename(file_path)} (textract extraction failed)"
+                else:
+                    return f"PowerPoint file: {os.path.basename(file_path)} (textract not available)"
                 
             # Other Office formats
             else:
-                text = textract.process(file_path).decode('utf-8')
-                return text[:self.sample_length]
+                if TEXTRACT_AVAILABLE:
+                    try:
+                        text = textract.process(file_path).decode('utf-8')
+                        return text[:self.sample_length]
+                    except Exception as e:
+                        log_activity(f"Textract extraction failed: {e}")
+                        return f"Office file: {os.path.basename(file_path)} (textract extraction failed)"
+                else:
+                    return f"Office file: {os.path.basename(file_path)} (textract not available)"
                 
         except Exception as e:
             log_activity(f"Office document extraction error: {e}")
@@ -425,13 +476,27 @@ class ContentExtractor:
             metadata += f"Size: {image.width}x{image.height}\n"
             metadata += f"Mode: {image.mode}\n\n"
             
-            # Perform OCR with specified languages
-            text = pytesseract.image_to_string(image, lang=self.ocr_languages)
+            # Check if Tesseract is available for OCR
+            if not self.tesseract_available:
+                return metadata + "OCR Text: [Tesseract OCR not available - install pytesseract and tesseract]"
             
-            return metadata + "OCR Text:\n" + text[:self.sample_length]
+            try:
+                # Perform OCR with specified languages
+                text = pytesseract.image_to_string(image, lang=self.ocr_languages)
+                return metadata + "OCR Text:\n" + text[:self.sample_length]
+            except pytesseract.TesseractNotFoundError:
+                log_activity("Tesseract executable not found. Please install Tesseract OCR.")
+                return metadata + "OCR Text: [Tesseract executable not found]"
+            except pytesseract.TesseractError as e:
+                log_activity(f"Tesseract OCR error: {e}")
+                return metadata + f"OCR Text: [OCR error: {e}]"
+            except Exception as e:
+                log_activity(f"Image OCR error: {e}")
+                return metadata + f"OCR Text: [OCR processing failed: {e}]"
+                
         except Exception as e:
-            log_activity(f"Image OCR error: {e}")
-            return ""
+            log_activity(f"Image processing error: {e}")
+            return f"Image file: {os.path.basename(file_path)} [Could not process image: {e}]"
     
     def _extract_from_audio(self, file_path):
         """
@@ -651,24 +716,35 @@ class ContentExtractor:
         try:
             # Try to use textract for EPUB files
             if extension == '.epub':
-                text = textract.process(file_path).decode('utf-8')
-                
-                # Extract a reasonable sample
-                if len(text) > 1000:
-                    # Get the first ~1000 chars and another sample from the middle
-                    beginning = text[:1000]
-                    middle = text[len(text)//2:len(text)//2 + 1000]
-                    return f"EPUB Content (beginning):\n{beginning}\n\nEPUB Content (middle sample):\n{middle}"
+                if TEXTRACT_AVAILABLE:
+                    try:
+                        text = textract.process(file_path).decode('utf-8')
+                        
+                        # Extract a reasonable sample
+                        if len(text) > 1000:
+                            # Get the first ~1000 chars and another sample from the middle
+                            beginning = text[:1000]
+                            middle = text[len(text)//2:len(text)//2 + 1000]
+                            return f"EPUB Content (beginning):\n{beginning}\n\nEPUB Content (middle sample):\n{middle}"
+                        else:
+                            return text
+                    except Exception as e:
+                        log_activity(f"Textract extraction for EPUB failed: {e}")
+                        return f"EPUB file: {os.path.basename(file_path)} (textract extraction failed)"
                 else:
-                    return text
+                    return f"EPUB file: {os.path.basename(file_path)} (textract not available)"
             
             # For other ebook formats, try common extraction tools or fallback to basic info
             else:
-                try:
-                    text = textract.process(file_path).decode('utf-8')
-                    return text[:self.sample_length]
-                except:
-                    return f"Ebook file: {os.path.basename(file_path)} (Format: {extension})\nContent extraction not fully supported for this format."
+                if TEXTRACT_AVAILABLE:
+                    try:
+                        text = textract.process(file_path).decode('utf-8')
+                        return text[:self.sample_length]
+                    except Exception as e:
+                        log_activity(f"Textract extraction for ebook failed: {e}")
+                        return f"Ebook file: {os.path.basename(file_path)} (Format: {extension})\nContent extraction not fully supported for this format."
+                else:
+                    return f"Ebook file: {os.path.basename(file_path)} (Format: {extension})\nTextract not available for ebook extraction."
         except Exception as e:
             log_activity(f"Ebook extraction error: {e}")
             return f"Ebook file: {os.path.basename(file_path)}"

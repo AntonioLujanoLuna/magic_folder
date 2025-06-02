@@ -17,7 +17,7 @@ from werkzeug.utils import secure_filename
 from magic_folder.config import Config
 from magic_folder.analyzer import AIAnalyzer
 from magic_folder.file_handler import FileHandler
-from magic_folder.utils import log_activity
+from magic_folder.utils import log_activity, set_log_file
 
 # Initialize Flask app
 app = Flask(__name__, 
@@ -45,6 +45,9 @@ def setup_app(config_path=None):
     
     # Initialize configuration
     config = Config(config_path)
+    
+    # Initialize logging system with the config's log file
+    set_log_file(config.log_file)
     
     # Initialize AI analyzer
     analyzer = AIAnalyzer(config)
@@ -248,13 +251,6 @@ def upload():
     
     return render_template('upload.html', config=config)
 
-@app.route('/feedback')
-def feedback():
-    """Manage feedback and corrections"""
-    return render_template('feedback.html', 
-                          config=config,
-                          stats=stats)
-
 @app.route('/move_file', methods=['POST'])
 def move_file():
     """Move a file to a different category"""
@@ -266,34 +262,34 @@ def move_file():
         return redirect(url_for('files'))
     
     # Get the current category from the path
-    parts = file_path.split(os.path.sep)
-    current_category = None
-    for i, part in enumerate(parts):
-        if part == config.organized_dir_name and i < len(parts) - 1:
-            current_category = parts[i+1]
-            break
+    try:
+        # Get relative path from organized_dir
+        rel_path = os.path.relpath(file_path, config.organized_dir)
+        current_category = rel_path.split(os.sep)[0]
+    except (ValueError, IndexError):
+        flash('Could not determine current category')
+        return redirect(url_for('files'))
     
-    if not current_category or current_category == new_category:
+    if current_category == new_category:
         flash('File is already in this category')
         return redirect(url_for('files'))
     
-    # Create feedback correction by moving to feedback directory
+    # Move the file to the new category
     filename = os.path.basename(file_path)
-    feedback_file = f"{current_category}--{filename}"
-    feedback_path = os.path.join(config.feedback_dir, new_category, feedback_file)
+    new_path = os.path.join(config.organized_dir, new_category, filename)
     
     # Ensure the destination directory exists
-    feedback_category_dir = os.path.join(config.feedback_dir, new_category)
-    if not os.path.exists(feedback_category_dir):
-        os.makedirs(feedback_category_dir)
+    new_category_dir = os.path.join(config.organized_dir, new_category)
+    if not os.path.exists(new_category_dir):
+        os.makedirs(new_category_dir)
     
     try:
-        # We don't move directly; we put in feedback dir for learning
         import shutil
-        shutil.copy2(file_path, feedback_path)
-        # The feedback mechanism will handle the move and learn
-        flash(f'File will be moved from {current_category} to {new_category}')
+        shutil.move(file_path, new_path)
+        log_activity(f"Moved {filename} from {current_category} to {new_category}")
+        flash(f'Successfully moved {filename} from {current_category} to {new_category}')
     except Exception as e:
+        log_activity(f"Error moving {filename}: {e}")
         flash(f'Error moving file: {str(e)}')
     
     return redirect(url_for('files'))
