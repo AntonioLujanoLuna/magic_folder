@@ -89,6 +89,16 @@ def parse_arguments():
         default="127.0.0.1",
         help="Host for the web interface (default: 127.0.0.1)"
     )
+    parser.add_argument(
+        "--offline",
+        action="store_true",
+        help="Run in offline mode (no model downloads, keyword-only classification)"
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview what would be done without actually moving files"
+    )
     return parser.parse_args()
 
 def main():
@@ -130,10 +140,10 @@ def main():
     config.ensure_directories()
     
     # Initialize AI Analyzer
-    analyzer = AIAnalyzer(config)
+    analyzer = AIAnalyzer(config, offline_mode=args.offline)
     
-    # Set up file system watcher
-    event_handler = FileHandler(config, analyzer)
+    # Set up file system watcher (with dry-run mode if specified)
+    event_handler = FileHandler(config, analyzer, dry_run=args.dry_run)
     observer = Observer()
     observer.schedule(event_handler, config.drop_dir, recursive=False)
     observer.start()
@@ -148,9 +158,16 @@ def main():
     print(f"- Deduplication: {'Enabled' if config.dedup_enabled else 'Disabled'}")
     print(f"- Content Caching: {'Enabled' if config.enable_content_cache else 'Disabled'}")
     print(f"- User Feedback System: {'Enabled' if config.enable_feedback_system else 'Disabled'}")
+    print(f"- Offline Mode: {'Enabled' if args.offline else 'Disabled'}")
+    print(f"- Dry Run Mode: {'Enabled' if args.dry_run else 'Disabled'}")
     
     if config.enable_feedback_system:
         print(f"  Feedback directory: {config.feedback_dir}")
+    
+    if args.dry_run:
+        print(f"\n⚠️  DRY RUN MODE: Files will be analyzed but not moved")
+    if args.offline:
+        print(f"🔄 OFFLINE MODE: Using keyword-only classification")
     
     print(f"\nSupported Categories:")
     for category in config.categories:

@@ -28,12 +28,13 @@ except ImportError:
 class AIAnalyzer:
     """Uses embeddings to analyze file content and determine categories and naming"""
     
-    def __init__(self, config):
+    def __init__(self, config, offline_mode=False):
         """
         Initialize the AI analyzer
         
         Args:
             config (Config): The application configuration
+            offline_mode (bool): Whether to run in offline mode (no model downloads)
         """
         self.config = config
         self.model_name = config.model_name
@@ -45,7 +46,15 @@ class AIAnalyzer:
         self.cache_file = os.path.join(config.base_dir, "embeddings_cache.pkl")
         self.content_cache = {}
         self.model_available = False
-        self.initialize_model()
+        self.offline_mode = offline_mode
+        
+        # Warn about model requirements
+        self._warn_about_model_requirements()
+        
+        if not offline_mode:
+            self.initialize_model()
+        else:
+            log_activity("Running in offline mode - using keyword-only classification")
         
     def initialize_model(self):
         """Initialize the embedding model with comprehensive error handling"""
@@ -104,6 +113,23 @@ class AIAnalyzer:
             self.embedding_model = None
             self.tokenizer = None
             self.model_available = False
+            
+    def _warn_about_model_requirements(self):
+        """Warn users about model download and memory requirements"""
+        model_info = {
+            'all-MiniLM-L6-v2': '80MB download, ~384MB RAM',
+            'all-mpnet-base-v2': '420MB download, ~1GB RAM', 
+            'multi-qa-MiniLM-L6-cos-v1': '80MB download, ~384MB RAM',
+            'paraphrase-MiniLM-L3-v2': '60MB download, ~256MB RAM',
+            'distilbert-base-uncased': '250MB download, ~768MB RAM'
+        }
+        
+        if self.model_name in model_info:
+            log_activity(f"Model '{self.model_name}' requirements: {model_info[self.model_name]}")
+            log_activity("First run will download the model - requires internet connection")
+        else:
+            log_activity(f"Using model '{self.model_name}' - check HuggingFace for size requirements")
+            log_activity("First run will download the model - requires internet connection")
             
     def _load_cached_embeddings(self):
         """Load cached embeddings from disk"""

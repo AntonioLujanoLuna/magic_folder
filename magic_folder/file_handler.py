@@ -18,19 +18,22 @@ from magic_folder.deduplication import DeduplicationManager
 class FileHandler(FileSystemEventHandler):
     """Handles file system events for the watched folder"""
     
-    def __init__(self, config, analyzer):
+    def __init__(self, config, analyzer, dry_run=False):
         """
         Initialize the file handler
         
         Args:
             config (Config): The application configuration
             analyzer (AIAnalyzer): The AI analyzer instance
+            dry_run (bool): Whether to run in dry-run mode (analyze but don't move files)
         """
         self.config = config
         self.analyzer = analyzer
+        self.dry_run = dry_run
         self.content_extractor = ContentExtractor(config)
         self.processing_queue = []
         self.processing_lock = threading.Lock()
+        self.keyword_update_lock = threading.Lock()  # Thread safety for keyword updates
         
         # Initialize deduplication manager if enabled
         self.dedup_manager = None
@@ -189,16 +192,18 @@ class FileHandler(FileSystemEventHandler):
         """Apply feedback data to improve the analyzer model"""
         # Update category keywords in the analyzer based on feedback
         if self.feedback_data["keywords"]:
-            # For each category with feedback
-            for category, words in self.feedback_data["keywords"].items():
-                if category in self.analyzer.category_keywords:
-                    existing_keywords = set(self.analyzer.category_keywords[category])
-                    
-                    # Add top keywords that aren't already in the list
-                    top_words = sorted(words.items(), key=lambda x: x[1], reverse=True)[:20]
-                    for word, count in top_words:
-                        if count >= 2 and word not in existing_keywords:  # Only add if seen at least twice
-                            self.analyzer.category_keywords[category].append(word)
+            # Thread-safe keyword updates
+            with self.keyword_update_lock:
+                # For each category with feedback
+                for category, words in self.feedback_data["keywords"].items():
+                    if category in self.analyzer.category_keywords:
+                        existing_keywords = set(self.analyzer.category_keywords[category])
+                        
+                        # Add top keywords that aren't already in the list
+                        top_words = sorted(words.items(), key=lambda x: x[1], reverse=True)[:20]
+                        for word, count in top_words:
+                            if count >= 2 and word not in existing_keywords:  # Only add if seen at least twice
+                                self.analyzer.category_keywords[category].append(word)
                             
             # Regenerate embeddings with new keywords
             if hasattr(self.analyzer, '_generate_category_embeddings'):
@@ -298,7 +303,7 @@ class FileHandler(FileSystemEventHandler):
             if not os.path.exists(category_dir):
                 os.makedirs(category_dir)
                 
-            # Move and rename the file
+            # Move and rename the file (or just log if dry run)
             destination = os.path.join(category_dir, new_name)
             
             # Ensure destination filename is unique
@@ -308,9 +313,12 @@ class FileHandler(FileSystemEventHandler):
                 new_name = f"{base_name}_{counter}{extension}"
                 destination = os.path.join(category_dir, new_name)
                 counter += 1
-                
-            shutil.move(file_path, destination)
-            log_activity(f"Processed: {filename} → {category}/{new_name}")
+            
+            if self.dry_run:
+                log_activity(f"DRY RUN: Would move {filename} → {category}/{new_name}")
+            else:
+                shutil.move(file_path, destination)
+                log_activity(f"Processed: {filename} → {category}/{new_name}")
             
             # Also create a copy in the feedback directory with original category prefix
             # This allows the user to easily correct categorizations by moving files

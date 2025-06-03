@@ -5,12 +5,8 @@ import os
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-# Copy config files to the package directory during setup
-if not os.path.exists("magic_folder/config"):
-    os.makedirs("magic_folder/config")
-    
-if os.path.exists("config/default_config.json"):
-    shutil.copy("config/default_config.json", "magic_folder/config/default_config.json")
+# Config files are already in magic_folder/config/ directory
+# No need to copy from root config/ directory
 
 setup(
     name="magic_folder",

@@ -21,13 +21,42 @@ from magic_folder.file_handler import FileHandler
 from magic_folder.utils import log_activity, set_log_file, validate_config_values
 
 # File upload settings
-ALLOWED_EXTENSIONS = {'pdf', 'txt', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'xlsx', 'xls', 'csv', 'ppt', 'pptx', 'mp3', 'mp4', 'avi', 'mov', 'zip', 'rar', '7z'}
+ALLOWED_EXTENSIONS = {'pdf', 'txt', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'xlsx', 'xls', 'csv', 'ppt', 'pptx', 'mp3', 'mp4', 'avi', 'mov'}  # Removed: 'zip', 'rar', '7z'
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 MAX_FILES_PER_UPLOAD = 10  # Maximum files per upload
 UPLOAD_RATE_LIMIT = 5  # Maximum uploads per minute per IP
 
 # Simple rate limiting tracking
 upload_tracking = defaultdict(list)
+
+# File ID tracking for secure operations
+file_registry = {}
+file_id_counter = 0
+file_registry_lock = threading.Lock()
+
+def generate_file_id(file_path):
+    """Generate a secure file ID for operations"""
+    global file_id_counter
+    with file_registry_lock:
+        file_id_counter += 1
+        file_id = f"file_{file_id_counter}_{hash(file_path) % 10000}"
+        file_registry[file_id] = file_path
+        return file_id
+
+def get_file_path_from_id(file_id):
+    """Get file path from secure file ID"""
+    with file_registry_lock:
+        return file_registry.get(file_id)
+
+def clear_file_registry():
+    """Clear old file registry entries"""
+    with file_registry_lock:
+        # Keep only recent entries to prevent memory bloat
+        if len(file_registry) > 1000:
+            # Remove oldest half
+            keys = list(file_registry.keys())
+            for key in keys[:len(keys)//2]:
+                del file_registry[key]
 
 def allowed_file(filename):
     """Check if the uploaded file has an allowed extension"""
@@ -347,12 +376,27 @@ def upload():
 
 @app.route('/move_file', methods=['POST'])
 def move_file():
-    """Move a file to a different category"""
-    file_path = request.form.get('file_path')
+    """Move a file to a different category using secure file IDs"""
+    file_id = request.form.get('file_id')
     new_category = request.form.get('new_category')
     
-    if not file_path or not new_category or new_category not in config.categories:
+    if not file_id or not new_category or new_category not in config.categories:
         flash('Invalid request')
+        return redirect(url_for('files'))
+    
+    # Get file path from secure ID
+    file_path = get_file_path_from_id(file_id)
+    if not file_path:
+        flash('Invalid file reference')
+        return redirect(url_for('files'))
+    
+    # Validate the file path is within organized directory
+    try:
+        if not os.path.commonpath([file_path, config.organized_dir]) == config.organized_dir:
+            flash('Invalid file location')
+            return redirect(url_for('files'))
+    except ValueError:
+        flash('Invalid file location')
         return redirect(url_for('files'))
     
     # Get the current category from the path
