@@ -56,6 +56,11 @@
 <script>
 let selectedFiles = [];
 
+// CSRF token helper function
+function getCSRFToken() {
+    return document.querySelector('meta[name=csrf-token]').getAttribute('content');
+}
+
 // File input change handler
 document.getElementById('fileInput').addEventListener('change', function(e) {
     const files = Array.from(e.target.files);
@@ -190,6 +195,7 @@ function uploadFilesSequentially(index) {
     });
     
     xhr.open('POST', '/upload');
+    xhr.setRequestHeader('X-CSRFToken', getCSRFToken());
     xhr.send(formData);
 }
 

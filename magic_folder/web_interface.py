@@ -11,7 +11,7 @@ from pathlib import Path
 from collections import defaultdict, Counter
 import threading
 import logging
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, session
 from flask_wtf.csrf import CSRFProtect
 from apscheduler.schedulers.background import BackgroundScheduler
 from werkzeug.utils import secure_filename
@@ -135,6 +135,21 @@ def setup_app(config_path=None):
     
     # Initialize CSRF protection
     csrf.init_app(app)
+    
+    # Add security headers
+    @app.after_request
+    def add_security_headers(response):
+        response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' cdn.jsdelivr.net"
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        return response
+    
+    # Initialize session ID for rate limiting
+    @app.before_request
+    def initialize_session():
+        if 'session_id' not in session:
+            session['session_id'] = os.urandom(16).hex()
     
     # Initialize logging system with the config's log file
     set_log_file(config.log_file)
@@ -295,6 +310,7 @@ def files():
                             'name': file,
                             'category': cat,
                             'path': file_path,
+                            'file_id': generate_file_id(file_path),
                             'size': os.path.getsize(file_path),
                             'modified': datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
                         })
@@ -309,6 +325,7 @@ def files():
                         'name': file,
                         'category': category,
                         'path': file_path,
+                        'file_id': generate_file_id(file_path),
                         'size': os.path.getsize(file_path),
                         'modified': datetime.datetime.fromtimestamp(os.path.getmtime(file_path))
                     })
@@ -327,18 +344,28 @@ def upload():
     if request.method == 'POST':
         # Check rate limit
         client_ip = request.environ.get('REMOTE_ADDR', '127.0.0.1')
-        if not check_rate_limit(client_ip):
+        session_id = session.get('session_id') if 'session_id' in session else None
+        if not check_rate_limit(client_ip, session_id):
             flash('Upload rate limit exceeded. Please wait a minute before uploading again.', 'error')
             return redirect(request.url)
         
-        if 'files[]' not in request.files:
+        # Handle both single file AJAX uploads and multiple file form uploads
+        files = []
+        if 'files[]' in request.files:
+            files = request.files.getlist('files[]')
+        elif 'file' in request.files:
+            files = [request.files['file']]
+        
+        if not files:
+            if request.is_xhr:  # AJAX request
+                return jsonify({'error': 'No file part'}), 400
             flash('No file part')
             return redirect(request.url)
         
-        files = request.files.getlist('files[]')
-        
         # Check maximum files per upload
         if len(files) > MAX_FILES_PER_UPLOAD:
+            if request.is_xhr:  # AJAX request
+                return jsonify({'error': f'Too many files. Maximum {MAX_FILES_PER_UPLOAD} files per upload.'}), 400
             flash(f'Too many files. Maximum {MAX_FILES_PER_UPLOAD} files per upload.', 'error')
             return redirect(request.url)
         
@@ -350,6 +377,8 @@ def upload():
             
             # Validate file type
             if not allowed_file(file.filename):
+                if request.is_xhr and len(files) == 1:  # Single file AJAX upload
+                    return jsonify({'error': f'File type not allowed: {file.filename}'}), 400
                 flash(f'File type not allowed: {file.filename}', 'error')
                 continue
             
@@ -359,6 +388,8 @@ def upload():
             file.seek(0)  # Reset to beginning
             
             if file_size > MAX_FILE_SIZE:
+                if request.is_xhr and len(files) == 1:  # Single file AJAX upload
+                    return jsonify({'error': f'File too large (max {MAX_FILE_SIZE // (1024*1024)}MB): {file.filename}'}), 400
                 flash(f'File too large (max {MAX_FILE_SIZE // (1024*1024)}MB): {file.filename}', 'error')
                 continue
             
@@ -384,12 +415,18 @@ def upload():
                 log_activity(f"Error uploading {file.filename}: {e}")
                 flash(f'Error uploading {file.filename}: {str(e)}', 'error')
         
-        if uploaded_count > 0:
-            flash(f"{uploaded_count} files uploaded successfully")
+        if request.is_xhr:  # AJAX request
+            if uploaded_count > 0:
+                return jsonify({'success': f'{uploaded_count} files uploaded successfully'}), 200
+            else:
+                return jsonify({'error': 'No files were uploaded'}), 400
         else:
-            flash('No files were uploaded', 'warning')
-            
-        return redirect(url_for('index'))
+            if uploaded_count > 0:
+                flash(f"{uploaded_count} files uploaded successfully")
+            else:
+                flash('No files were uploaded', 'warning')
+                
+            return redirect(url_for('index'))
     
     return render_template('upload.html', config=config)
 

@@ -73,7 +73,7 @@
                 </td>
                 <td class="text-muted">{{ file.modified.strftime('%Y-%m-%d') }}</td>
                 <td>
-                    <button type="button" class="btn btn-small" onclick="openMoveModal('{{ file.path }}', '{{ file.name }}')">
+                    <button type="button" class="btn btn-small" onclick="openMoveModal('{{ file.file_id }}', '{{ file.name }}')">
                         Move
                     </button>
                 </td>
@@ -102,7 +102,8 @@
     <div style="background: white; padding: 32px; border-radius: 8px; max-width: 400px; width: 90%;">
         <h3 style="margin-bottom: 24px;">Move File</h3>
         <form action="/move_file" method="post">
-            <input type="hidden" name="file_path" id="modalFilePath">
+            {{ csrf_token() }}
+            <input type="hidden" name="file_id" id="modalFileId">
             <div class="form-group">
                 <label class="form-label">Move <strong id="modalFileName"></strong> to:</label>
                 <select name="new_category" class="form-input" required>
@@ -123,8 +124,8 @@
 
 {% block scripts %}
 <script>
-function openMoveModal(filePath, fileName) {
-    document.getElementById('modalFilePath').value = filePath;
+function openMoveModal(fileId, fileName) {
+    document.getElementById('modalFileId').value = fileId;
     document.getElementById('modalFileName').textContent = fileName;
     document.getElementById('moveModal').style.display = 'flex';
 }
