@@ -12,6 +12,7 @@ from collections import defaultdict, Counter
 import threading
 import logging
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
+from flask_wtf.csrf import CSRFProtect
 from apscheduler.schedulers.background import BackgroundScheduler
 from werkzeug.utils import secure_filename
 
@@ -26,8 +27,9 @@ MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 MAX_FILES_PER_UPLOAD = 10  # Maximum files per upload
 UPLOAD_RATE_LIMIT = 5  # Maximum uploads per minute per IP
 
-# Simple rate limiting tracking
+# Enhanced rate limiting tracking (IP + session based)
 upload_tracking = defaultdict(list)
+session_tracking = defaultdict(list)
 
 # File ID tracking for secure operations
 file_registry = {}
@@ -63,25 +65,39 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def check_rate_limit(ip_address):
-    """Check if the IP address has exceeded the upload rate limit"""
+def check_rate_limit(ip_address, session_id=None):
+    """Check if the IP address or session has exceeded the upload rate limit"""
     now = time.time()
-    # Clean old entries (older than 1 minute)
-    upload_tracking[ip_address] = [t for t in upload_tracking[ip_address] if now - t < 60]
     
-    # Check if rate limit exceeded
-    if len(upload_tracking[ip_address]) >= UPLOAD_RATE_LIMIT:
+    # Check IP-based rate limiting
+    upload_tracking[ip_address] = [t for t in upload_tracking[ip_address] if now - t < 60]
+    ip_exceeded = len(upload_tracking[ip_address]) >= UPLOAD_RATE_LIMIT
+    
+    # Check session-based rate limiting if session ID is provided
+    session_exceeded = False
+    if session_id:
+        session_tracking[session_id] = [t for t in session_tracking[session_id] if now - t < 60]
+        session_exceeded = len(session_tracking[session_id]) >= UPLOAD_RATE_LIMIT
+    
+    # If either limit is exceeded, deny the request
+    if ip_exceeded or session_exceeded:
         return False
     
-    # Record this upload attempt
+    # Record this upload attempt for both IP and session
     upload_tracking[ip_address].append(now)
+    if session_id:
+        session_tracking[session_id].append(now)
+    
     return True
 
 # Initialize Flask app
 app = Flask(__name__, 
            template_folder=os.path.join(os.path.dirname(__file__), 'web', 'templates'),
            static_folder=os.path.join(os.path.dirname(__file__), 'web', 'static'))
-# Secret key will be set after config is loaded
+
+# CSRF Protection
+csrf = CSRFProtect()
+# Secret key and CSRF will be initialized after config is loaded
 
 # Global variables
 config = None
@@ -116,6 +132,9 @@ def setup_app(config_path=None):
         config.secret_key = os.urandom(24).hex()
         config.save_config()
     app.secret_key = config.secret_key
+    
+    # Initialize CSRF protection
+    csrf.init_app(app)
     
     # Initialize logging system with the config's log file
     set_log_file(config.log_file)

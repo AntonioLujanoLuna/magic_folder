@@ -8,6 +8,7 @@ import time
 import json
 import shutil
 import threading
+import queue
 from datetime import datetime
 from watchdog.events import FileSystemEventHandler
 
@@ -31,9 +32,12 @@ class FileHandler(FileSystemEventHandler):
         self.analyzer = analyzer
         self.dry_run = dry_run
         self.content_extractor = ContentExtractor(config)
-        self.processing_queue = []
+        
+        # Use thread-safe queue for better concurrency
+        self.processing_queue = queue.Queue(maxsize=100)  # Limit queue size
         self.processing_lock = threading.Lock()
         self.keyword_update_lock = threading.Lock()  # Thread safety for keyword updates
+        self.shutdown_event = threading.Event()  # For graceful shutdown
         
         # Initialize deduplication manager if enabled
         self.dedup_manager = None
@@ -91,6 +95,10 @@ class FileHandler(FileSystemEventHandler):
     def _save_feedback_data(self):
         """Save feedback data to the JSON file"""
         try:
+            # Ensure feedback directory exists
+            if not os.path.exists(self.feedback_dir):
+                os.makedirs(self.feedback_dir)
+                
             with open(self.feedback_file, 'w', encoding='utf-8') as f:
                 json.dump(self.feedback_data, f, indent=4)
         except Exception as e:
@@ -230,23 +238,21 @@ class FileHandler(FileSystemEventHandler):
             filename in self.config.excluded_files):
             return
             
-        # Add to processing queue
-        with self.processing_lock:
-            self.processing_queue.append(file_path)
+        # Add to processing queue (non-blocking)
+        try:
+            self.processing_queue.put_nowait(file_path)
+        except queue.Full:
+            log_activity("Processing queue full - skipping file until queue has space")
         
         log_activity(f"New file detected: {filename}")
     
     def _process_queue(self):
-        """Process files in the queue"""
-        while True:
-            file_to_process = None
-            
-            # Get a file from the queue
-            with self.processing_lock:
-                if self.processing_queue:
-                    file_to_process = self.processing_queue.pop(0)
-            
-            if file_to_process:
+        """Process files in the queue with improved error handling"""
+        while not self.shutdown_event.is_set():
+            try:
+                # Get a file from the queue with timeout
+                file_to_process = self.processing_queue.get(timeout=1.0)
+                
                 # Wait a moment to ensure file is fully written
                 time.sleep(self.config.processing_delay)
                 
@@ -254,9 +260,26 @@ class FileHandler(FileSystemEventHandler):
                     self._process_file(file_to_process)
                 except Exception as e:
                     log_activity(f"Error processing file {os.path.basename(file_to_process)}: {e}")
-            
-            # Sleep before checking queue again
-            time.sleep(self.config.check_interval)
+                finally:
+                    # Mark task as done
+                    self.processing_queue.task_done()
+                    
+            except queue.Empty:
+                # No files to process, continue loop
+                continue
+            except Exception as e:
+                log_activity(f"Unexpected error in processing queue: {e}")
+                
+    def shutdown(self):
+        """Gracefully shutdown the file handler"""
+        log_activity("Shutting down file handler...")
+        self.shutdown_event.set()
+        
+        # Wait for queue to finish processing
+        try:
+            self.processing_queue.join()
+        except Exception as e:
+            log_activity(f"Error during shutdown: {e}")
     
     def _process_file(self, file_path):
         """

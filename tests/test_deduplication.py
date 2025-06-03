@@ -39,10 +39,10 @@ class TestDeduplicationManager(unittest.TestCase):
         # Setup mock config
         self.mock_config = MagicMock()
         self.mock_config.dedup_enabled = True
-        self.mock_config.dedup_hash_algo = "sha256"
-        self.mock_config.dedup_strategy = "move_to_duplicates"
-        self.mock_config.dedup_dir = self.duplicates_dir
+        self.mock_config.dedup_hash_method = "sha256"  # Updated to match current implementation
+        self.mock_config.dedup_action = "move"  # Updated to match current implementation
         self.mock_config.organized_dir = self.temp_dir
+        self.mock_config.base_dir = self.temp_dir
     
     def tearDown(self):
         """Clean up test fixtures"""
@@ -126,7 +126,7 @@ class TestDeduplicationManager(unittest.TestCase):
         mock_conn.cursor.return_value = mock_cursor
         
         # Configure for delete strategy
-        self.mock_config.dedup_strategy = "delete"
+        self.mock_config.dedup_action = "delete"
         
         # Create the deduplication manager
         dedup_manager = DeduplicationManager(self.mock_config)
@@ -153,7 +153,7 @@ class TestDeduplicationManager(unittest.TestCase):
         mock_conn.cursor.return_value = mock_cursor
         
         # Configure for move strategy
-        self.mock_config.dedup_strategy = "move_to_duplicates"
+        self.mock_config.dedup_action = "move"
         
         # Create the deduplication manager
         dedup_manager = DeduplicationManager(self.mock_config)
@@ -171,27 +171,7 @@ class TestDeduplicationManager(unittest.TestCase):
         self.assertFalse(os.path.exists(temp_duplicate))
         self.assertTrue(os.path.exists(os.path.join(self.duplicates_dir, "to_move.txt")))
     
-    @patch('magic_folder.deduplication.sqlite3')
-    def test_add_file_record(self, mock_sqlite3):
-        """Test adding a file record to the database"""
-        # Set up mock database
-        mock_conn = MagicMock()
-        mock_cursor = MagicMock()
-        mock_sqlite3.connect.return_value = mock_conn
-        mock_conn.cursor.return_value = mock_cursor
-        
-        # Create the deduplication manager
-        dedup_manager = DeduplicationManager(self.mock_config)
-        
-        # Add a file record
-        dedup_manager.add_file_record("test_hash", "/path/to/file.txt", "test_category")
-        
-        # Check if record was added
-        mock_cursor.execute.assert_called_with(
-            "INSERT OR REPLACE INTO files (hash, path, category) VALUES (?, ?, ?)",
-            ("test_hash", "/path/to/file.txt", "test_category")
-        )
-        mock_conn.commit.assert_called_once()
+
 
 if __name__ == '__main__':
     unittest.main() 

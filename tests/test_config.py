@@ -42,8 +42,8 @@ class TestConfig(unittest.TestCase):
             },
             "deduplication": {
                 "enabled": True,
-                "hash_algorithm": "sha256",
-                "strategy": "move_to_duplicates"
+                "hash_method": "sha256",
+                "action": "move_to_duplicates"
             },
             "ocr": {
                 "languages": ["eng"]
@@ -71,8 +71,8 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(config.processing_delay, 1.5)
         self.assertEqual(config.check_interval, 0.5)
         self.assertTrue(config.dedup_enabled)
-        self.assertEqual(config.dedup_hash_algo, "sha256")
-        self.assertEqual(config.dedup_strategy, "move_to_duplicates")
+        self.assertEqual(config.dedup_hash_method, "sha256")
+        self.assertEqual(config.dedup_action, "move_to_duplicates")
         self.assertEqual(config.ocr_languages, ["eng"])
     
     def test_default_values(self):
@@ -103,25 +103,30 @@ class TestConfig(unittest.TestCase):
     def test_expand_paths(self):
         """Test path expansion in configuration"""
         with patch('os.path.expanduser') as mock_expanduser:
-            mock_expanduser.side_effect = lambda path: path.replace('~', '/home/testuser')
+            # Use a safe path that won't trigger validation errors
+            safe_path = os.path.join(self.temp_dir, "testuser", "Documents", "magic_folder")
+            mock_expanduser.side_effect = lambda path: path.replace('~', os.path.join(self.temp_dir, "testuser"))
             
             config = Config(self.config_path)
             
-            # Check if home directory was expanded
-            self.assertEqual(config.base_dir, "/home/testuser/Documents/magic_folder")
+            # Check if home directory was expanded (should be absolute path now)
+            expected_base = os.path.abspath(safe_path)
+            self.assertEqual(config.base_dir, expected_base)
     
     def test_update_paths(self):
         """Test that paths are updated when base_dir changes"""
         config = Config(self.config_path)
         
-        # Change the base directory
+        # Change the base directory to a safe test path
         orig_drop_dir = config.drop_dir
-        config.base_dir = "/new/base/path"
+        test_base = os.path.join(self.temp_dir, "new", "base", "path")
+        config.base_dir = test_base
         config.update_paths()
         
-        # Check that drop_dir was updated
+        # Check that drop_dir was updated (should be absolute path now)
         self.assertNotEqual(config.drop_dir, orig_drop_dir)
-        self.assertEqual(config.drop_dir, os.path.join("/new/base/path", "incoming"))
+        expected_drop_dir = os.path.join(os.path.abspath(test_base), "incoming")
+        self.assertEqual(config.drop_dir, expected_drop_dir)
     
     def test_ensure_directories(self):
         """Test directory creation"""

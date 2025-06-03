@@ -64,11 +64,63 @@ class Config:
         
     def update_paths(self):
         """Update derived paths based on base directory"""
+        # Validate base directory for security
+        self._validate_base_directory()
+        
         self.drop_dir = os.path.join(self.base_dir, self.drop_dir_name)
         self.organized_dir = os.path.join(self.base_dir, self.organized_dir_name)
         self.log_file = os.path.join(self.base_dir, self.log_file_name)
         self.config_file = os.path.join(self.base_dir, "config.json")
         self.feedback_dir = os.path.join(self.base_dir, self.feedback_dir_name)
+        
+    def _validate_base_directory(self):
+        """Validate that base directory is safe to use"""
+        import platform
+        
+        # Convert to absolute path for validation
+        abs_base = os.path.abspath(self.base_dir)
+        
+        # Platform-specific dangerous directories
+        if platform.system() == 'Windows':
+            dangerous_paths = [
+                'C:\\',
+                'C:\\Windows',
+                'C:\\Program Files',
+                'C:\\Program Files (x86)',
+                'C:\\Windows\\System32',
+                'C:\\System32',
+                'C:\\ProgramData'
+            ]
+        else:
+            dangerous_paths = [
+                '/',
+                '/bin', '/sbin', '/usr/bin', '/usr/sbin',
+                '/etc', '/boot', '/dev', '/proc', '/sys',
+                '/var/log', '/var/lib', '/var/run',
+                '/tmp', '/var/tmp',
+                '/home', '/root'
+            ]
+        
+        # Check for dangerous system paths
+        for dangerous in dangerous_paths:
+            # Use exact matching or ensure it's exactly that directory
+            if (abs_base.lower() == dangerous.lower() or 
+                abs_base.lower().startswith(dangerous.lower() + os.sep)):
+                raise ValueError(f"Base directory cannot be set to system directory: {abs_base}")
+        
+        # Ensure it's not too close to filesystem root
+        path_parts = Path(abs_base).parts
+        min_parts = 2 if platform.system() == 'Windows' else 3  # Windows: C:\Users vs Unix: /home/user
+        if len(path_parts) < min_parts:
+            raise ValueError(f"Base directory too close to filesystem root: {abs_base}")
+        
+        # Check write permissions on parent directory
+        parent_dir = os.path.dirname(abs_base)
+        if os.path.exists(parent_dir) and not os.access(parent_dir, os.W_OK):
+            raise ValueError(f"No write permission for parent directory: {parent_dir}")
+            
+        # Update the base_dir to absolute path
+        self.base_dir = abs_base
         
     def load_config(self, config_path):
         """

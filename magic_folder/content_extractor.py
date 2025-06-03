@@ -153,6 +153,12 @@ class ContentExtractor:
         Returns:
             str: Extracted text content
         """
+        # Check file size and warn about large files
+        file_size = os.path.getsize(file_path)
+        if file_size > 100 * 1024 * 1024:  # 100MB
+            log_activity(f"Warning: Large file ({file_size // (1024*1024)}MB) - {os.path.basename(file_path)}")
+            log_activity("Processing will be limited to prevent memory issues")
+        
         # Check cache first
         file_hash = self._calculate_file_hash(file_path)
         if file_hash and file_hash in self.content_cache:
@@ -313,12 +319,26 @@ class ContentExtractor:
                             text += f"{key}: {info[key]}\n"
                     text += "\n"
                 
-                # Extract first few pages
+                # Extract first few pages (limit based on file size)
+                file_size = os.path.getsize(file_path)
+                max_pages = 3 if file_size > 50 * 1024 * 1024 else 5  # Fewer pages for large files
+                
                 text += "Content:\n"
-                for page_num in range(min(5, len(pdf_reader.pages))):  # First 5 pages only
+                for page_num in range(min(max_pages, len(pdf_reader.pages))):
                     page = pdf_reader.pages[page_num]
                     text += f"--- Page {page_num + 1} ---\n"
-                    text += page.extract_text() + "\n"
+                    
+                    # Extract text in chunks to manage memory
+                    try:
+                        page_text = page.extract_text()
+                        # Limit individual page text to prevent memory bloat
+                        if len(page_text) > 5000:
+                            page_text = page_text[:5000] + "... [truncated]"
+                        text += page_text + "\n"
+                    except Exception as e:
+                        log_activity(f"Error extracting page {page_num + 1}: {e}")
+                        text += f"[Page {page_num + 1} extraction failed]\n"
+                    
                     if len(text) > self.sample_length:
                         break
             

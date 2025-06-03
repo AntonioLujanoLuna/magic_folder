@@ -12,7 +12,26 @@ This document outlines the security improvements and new features implemented to
 # After:  {'pdf', 'txt', ..., 'mp3', 'mp4', 'avi', 'mov'}  # Archives removed
 ```
 
-### 2. File Path Security
+### 2. CSRF Protection
+**Issue**: Web forms vulnerable to cross-site request forgery
+**Solution**: Added Flask-WTF CSRF protection
+```python
+from flask_wtf.csrf import CSRFProtect
+csrf = CSRFProtect()
+csrf.init_app(app)
+```
+
+### 3. Enhanced Rate Limiting
+**Issue**: Upload rate limiting could be bypassed by changing IP
+**Solution**: Dual IP + session-based rate limiting
+```python
+def check_rate_limit(ip_address, session_id=None):
+    # Check both IP and session limits
+    ip_exceeded = len(upload_tracking[ip_address]) >= UPLOAD_RATE_LIMIT
+    session_exceeded = len(session_tracking[session_id]) >= UPLOAD_RATE_LIMIT
+```
+
+### 4. File Path Security
 **Issue**: Direct file path manipulation in web interface
 **Solution**: Implemented secure file ID system
 - Web operations now use secure file IDs instead of direct paths
@@ -26,13 +45,26 @@ This document outlines the security improvements and new features implemented to
 #         # + path validation
 ```
 
-### 3. Thread Safety
-**Issue**: Feedback system modified analyzer state without locking
-**Solution**: Added thread-safe keyword updates
+### 5. Configuration Path Validation
+**Issue**: Base directory could be set to dangerous system locations
+**Solution**: Added comprehensive path validation
 ```python
-# Added keyword_update_lock for thread safety
+def _validate_base_directory(self):
+    # Prevent setting base directory to system paths
+    dangerous_paths = ['/', '/bin', '/etc', '/Windows', '/System32', ...]
+    # Check write permissions and path depth
+```
+
+### 6. Thread Safety
+**Issue**: Feedback system modified analyzer state without locking
+**Solution**: Added thread-safe keyword updates and queue management
+```python
+# Thread-safe keyword updates
 with self.keyword_update_lock:
     self.analyzer.category_keywords[category].append(word)
+
+# Thread-safe queue for file processing
+self.processing_queue = queue.Queue(maxsize=100)
 ```
 
 ## 🚀 New Features
@@ -58,7 +90,28 @@ Model 'all-MiniLM-L6-v2' requirements: 80MB download, ~384MB RAM
 First run will download the model - requires internet connection
 ```
 
-### 4. Cleaned Up Config Files
+### 4. Memory Management
+**Issue**: Large files could consume excessive memory during processing
+**Solution**: Added streaming and size-based limits
+```python
+# File size warnings and limits
+if file_size > 100 * 1024 * 1024:  # 100MB
+    log_activity(f"Warning: Large file ({file_size // (1024*1024)}MB)")
+    
+# Chunked PDF processing for large files
+max_pages = 3 if file_size > 50 * 1024 * 1024 else 5
+```
+
+### 5. Enhanced Queue Management
+**Issue**: Simple list-based queue was not thread-safe
+**Solution**: Implemented proper thread-safe queue with limits
+```python
+self.processing_queue = queue.Queue(maxsize=100)  # Prevent memory bloat
+# Graceful shutdown support
+self.shutdown_event = threading.Event()
+```
+
+### 6. Cleaned Up Config Files
 **Issue**: Redundant config files in both `config/` and `magic_folder/config/`
 **Solution**: Removed copy operation from setup.py, use single config location
 
@@ -145,10 +198,14 @@ magic-folder --no-cache --no-feedback
 
 ## 🐛 Bug Fixes
 
-1. **Thread Safety**: Fixed race conditions in feedback system
+1. **Thread Safety**: Fixed race conditions in feedback system and file processing
 2. **Config Redundancy**: Eliminated duplicate config file copying
-3. **Resource Awareness**: Added model size warnings
+3. **Resource Awareness**: Added model size warnings and memory management
 4. **Security Hardening**: Removed dangerous file types, added path validation
+5. **Queue Management**: Replaced unsafe list with thread-safe queue.Queue
+6. **CSRF Protection**: Added protection against cross-site request forgery
+7. **Memory Leaks**: Improved large file handling to prevent memory bloat
+8. **Rate Limiting**: Enhanced to prevent IP address bypass techniques
 
 ## 🔄 Backward Compatibility
 
