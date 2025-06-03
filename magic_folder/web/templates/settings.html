@@ -3,156 +3,116 @@
 {% block title %}Settings - Magic Folder{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Settings</h1>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <div class="btn-group me-2">
-            <a href="/setup" class="btn btn-sm btn-outline-secondary">Advanced Setup</a>
+<div class="mb-32">
+    <h1 class="page-title">Settings</h1>
+    <p class="page-description">Configure Magic Folder preferences</p>
+</div>
+
+<!-- Settings Form -->
+<div class="card">
+    <h2 class="card-title">Configuration</h2>
+    <form method="post" action="/settings">
+        <div class="form-group">
+            <label class="form-label">Base Directory</label>
+            <input type="text" name="base_dir" class="form-input" value="{{ config.base_dir }}" readonly>
+            <p class="text-muted" style="font-size: 14px; margin-top: 8px;">
+                The main directory where Magic Folder organizes files
+            </p>
         </div>
+
+        <div class="form-group">
+            <label class="form-label">AI Model</label>
+            <input type="text" name="model_name" class="form-input" value="{{ config.model_name }}" readonly>
+            <p class="text-muted" style="font-size: 14px; margin-top: 8px;">
+                The AI model used for file categorization
+            </p>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Content Sample Length</label>
+            <input type="number" name="sample_length" class="form-input" value="{{ config.sample_length }}" min="100" max="5000" step="100">
+            <p class="text-muted" style="font-size: 14px; margin-top: 8px;">
+                Number of characters to analyze from each file (100-5000)
+            </p>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Enable Feedback System</label>
+            <div style="display: flex; align-items: center; margin-top: 8px;">
+                <input type="checkbox" name="enable_feedback" {% if config.enable_feedback %}checked{% endif %} style="margin-right: 12px;">
+                <span>Allow Magic Folder to learn from file corrections</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Enable Caching</label>
+            <div style="display: flex; align-items: center; margin-top: 8px;">
+                <input type="checkbox" name="enable_cache" {% if config.enable_cache %}checked{% endif %} style="margin-right: 12px;">
+                <span>Cache content analysis to improve performance</span>
+            </div>
+        </div>
+
+        <div style="text-align: right; margin-top: 32px;">
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+    </form>
+</div>
+
+<!-- Categories -->
+<div class="card">
+    <h2 class="card-title">Categories</h2>
+    <p class="text-muted mb-24">Current file categories used for organization</p>
+    
+    <div class="grid grid-3">
+        {% for category in config.categories %}
+        <div style="padding: 16px; border: 1px solid #e0e0e0; border-radius: 4px; text-align: center;">
+            <i class="bi bi-folder" style="font-size: 24px; color: #666; margin-bottom: 8px;"></i>
+            <div style="font-weight: 500; margin-bottom: 4px;">{{ category|title }}</div>
+            <div class="text-muted" style="font-size: 14px;">
+                {% if stats.categories[category] is defined %}
+                {{ stats.categories[category] }} files
+                {% else %}
+                0 files
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-8 mx-auto">
-        <div class="card card-hover">
-            <div class="card-header bg-header">
-                <h5 class="card-title mb-0"><i class="bi bi-gear"></i> Magic Folder Settings</h5>
+<!-- System Information -->
+<div class="card">
+    <h2 class="card-title">System Information</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+        <div>
+            <h3 style="font-size: 16px; margin-bottom: 16px; color: #000;">Storage</h3>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Drop Folder:</span>
+                    <span class="text-muted">{{ config.drop_folder }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Organized Folder:</span>
+                    <span class="text-muted">{{ config.organized_folder }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Feedback Folder:</span>
+                    <span class="text-muted">{{ config.feedback_folder }}</span>
+                </div>
             </div>
-            <div class="card-body">
-                <form action="/settings" method="post">
-                    <!-- Basic Settings -->
-                    <div class="mb-4">
-                        <h6 class="fw-bold"><i class="bi bi-sliders"></i> AI Model Settings</h6>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="model_name" class="form-label">AI Model</label>
-                                    <input type="text" class="form-control" id="model_name" name="model_name" 
-                                           value="{{ config.model_name }}">
-                                    <div class="form-text">Hugging Face model name for text classification</div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="sample_length" class="form-label">Sample Length</label>
-                                    <input type="number" class="form-control" id="sample_length" name="sample_length" 
-                                           value="{{ config.sample_length }}">
-                                    <div class="form-text">Maximum text length to analyze (characters)</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Feature Toggles -->
-                    <div class="mb-4">
-                        <h6 class="fw-bold"><i class="bi bi-toggles"></i> Feature Toggles</h6>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="enable_content_cache" name="enable_content_cache"
-                                           {% if config.enable_content_cache %}checked{% endif %}>
-                                    <label class="form-check-label" for="enable_content_cache">Content Caching</label>
-                                    <div class="form-text">Cache extracted file content</div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="enable_embedding_cache" name="enable_embedding_cache"
-                                           {% if config.enable_embedding_cache %}checked{% endif %}>
-                                    <label class="form-check-label" for="enable_embedding_cache">Embedding Cache</label>
-                                    <div class="form-text">Cache document embeddings</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="enable_feedback_system" name="enable_feedback_system"
-                                           {% if config.enable_feedback_system %}checked{% endif %}>
-                                    <label class="form-check-label" for="enable_feedback_system">Feedback System</label>
-                                    <div class="form-text">Learn from user corrections</div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="dedup_enabled" name="dedup_enabled"
-                                           {% if config.dedup_enabled %}checked{% endif %}>
-                                    <label class="form-check-label" for="dedup_enabled">Deduplication</label>
-                                    <div class="form-text">Detect and handle duplicate files</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Advanced File Type Settings -->
-                    <div class="mb-4">
-                        <h6 class="fw-bold"><i class="bi bi-file-earmark-code"></i> File Type Settings</h6>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="enable_audio_analysis" name="enable_audio_analysis"
-                                           {% if config.enable_audio_analysis %}checked{% endif %}>
-                                    <label class="form-check-label" for="enable_audio_analysis">Audio Analysis</label>
-                                    <div class="form-text">Extract metadata from audio files</div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="enable_video_analysis" name="enable_video_analysis"
-                                           {% if config.enable_video_analysis %}checked{% endif %}>
-                                    <label class="form-check-label" for="enable_video_analysis">Video Analysis</label>
-                                    <div class="form-text">Extract metadata from video files</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="enable_archive_inspection" name="enable_archive_inspection"
-                                           {% if config.enable_archive_inspection %}checked{% endif %}>
-                                    <label class="form-check-label" for="enable_archive_inspection">Archive Inspection</label>
-                                    <div class="form-text">Look inside archive files (zip, etc.)</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Directory Information (Read-only) -->
-                    <div class="mb-4">
-                        <h6 class="fw-bold"><i class="bi bi-folder"></i> Directory Information</h6>
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="mb-2">
-                                    <label class="form-label">Base Directory</label>
-                                    <input type="text" class="form-control" value="{{ config.base_dir }}" readonly>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-2">
-                                    <label class="form-label">Drop Directory</label>
-                                    <input type="text" class="form-control" value="{{ config.drop_dir }}" readonly>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-2">
-                                    <label class="form-label">Organized Directory</label>
-                                    <input type="text" class="form-control" value="{{ config.organized_dir }}" readonly>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-text">
-                            To change directory paths, please use the <a href="/setup">Advanced Setup</a> page.
-                        </div>
-                    </div>
-                    
-                    <div class="text-end">
-                        <a href="/" class="btn btn-secondary me-2">Cancel</a>
-                        <button type="submit" class="btn btn-primary">Save Settings</button>
-                    </div>
-                </form>
+        </div>
+        
+        <div>
+            <h3 style="font-size: 16px; margin-bottom: 16px; color: #000;">Performance</h3>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Cache Enabled:</span>
+                    <span class="text-muted">{% if config.enable_cache %}Yes{% else %}No{% endif %}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Feedback System:</span>
+                    <span class="text-muted">{% if config.enable_feedback %}Yes{% else %}No{% endif %}</span>
+                </div>
             </div>
         </div>
     </div>

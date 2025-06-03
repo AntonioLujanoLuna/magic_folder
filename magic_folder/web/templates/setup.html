@@ -1,144 +1,75 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Setup - Magic Folder</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .setup-card {
-            border-radius: 10px;
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-            overflow: hidden;
-        }
-        .setup-header {
-            background-color: #343a40;
-            color: white;
-            padding: 2rem;
-            text-align: center;
-        }
-        .setup-body {
-            padding: 2rem;
-            background-color: white;
-        }
-        .logo {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="row justify-content-center align-items-center min-vh-100">
-            <div class="col-md-8">
-                <div class="setup-card">
-                    <div class="setup-header">
-                        <div class="logo">
-                            <i class="bi bi-folder-symlink"></i>
-                        </div>
-                        <h1>Magic Folder Setup</h1>
-                        <p class="lead">Configure your AI-powered file organization system</p>
-                    </div>
-                    <div class="setup-body">
-                        {% with messages = get_flashed_messages() %}
-                        {% if messages %}
-                        <div class="mb-3">
-                            {% for message in messages %}
-                            <div class="alert alert-info alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                        {% endwith %}
-                        
-                        <form action="/setup" method="post">
-                            <div class="mb-4">
-                                <h4><i class="bi bi-folder"></i> Directories</h4>
-                                <p class="text-muted">Configure where Magic Folder will store files</p>
-                                
-                                <div class="mb-3">
-                                    <label for="base_dir" class="form-label">Base Directory</label>
-                                    <input type="text" class="form-control" id="base_dir" name="base_dir" 
-                                           value="{{ config.base_dir }}" required>
-                                    <div class="form-text">The main directory where Magic Folder will store all of its data</div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="drop_dir" class="form-label">Drop Directory</label>
-                                            <input type="text" class="form-control" id="drop_dir" name="drop_dir" 
-                                                   value="{{ config.drop_dir_name }}">
-                                            <div class="form-text">Where files will be dropped for processing</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label for="organized_dir" class="form-label">Organized Directory</label>
-                                            <input type="text" class="form-control" id="organized_dir" name="organized_dir"
-                                                   value="{{ config.organized_dir_name }}">
-                                            <div class="form-text">Where processed files will be organized</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="mb-4">
-                                <h4><i class="bi bi-lightning"></i> Features</h4>
-                                <p class="text-muted">Configure Magic Folder features</p>
-                                
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="enable_content_cache" name="enable_content_cache"
-                                           {% if config.enable_content_cache %}checked{% endif %}>
-                                    <label class="form-check-label" for="enable_content_cache">Enable Content Caching</label>
-                                    <div class="form-text">Cache extracted content to avoid reprocessing similar files</div>
-                                </div>
-                                
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="enable_embedding_cache" name="enable_embedding_cache"
-                                           {% if config.enable_embedding_cache %}checked{% endif %}>
-                                    <label class="form-check-label" for="enable_embedding_cache">Enable Embedding Cache</label>
-                                    <div class="form-text">Cache document embeddings for faster classification</div>
-                                </div>
-                                
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="enable_feedback_system" name="enable_feedback_system"
-                                           {% if config.enable_feedback_system %}checked{% endif %}>
-                                    <label class="form-check-label" for="enable_feedback_system">Enable Feedback System</label>
-                                    <div class="form-text">Learn from user corrections to improve categorization</div>
-                                </div>
-                                
-                                <div class="form-check form-switch mb-3">
-                                    <input class="form-check-input" type="checkbox" id="dedup_enabled" name="dedup_enabled"
-                                           {% if config.dedup_enabled %}checked{% endif %}>
-                                    <label class="form-check-label" for="dedup_enabled">Enable Deduplication</label>
-                                    <div class="form-text">Detect and handle duplicate files</div>
-                                </div>
-                            </div>
-                            
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-check-lg"></i> Save Configuration
-                                </button>
-                                {% if config %}
-                                <a href="/" class="btn btn-outline-secondary">
-                                    <i class="bi bi-skip-backward"></i> Back to Dashboard
-                                </a>
-                                {% endif %}
-                            </div>
-                        </form>
-                    </div>
+{% extends 'base.html' %}
+
+{% block title %}Setup - Magic Folder{% endblock %}
+
+{% block content %}
+<div class="mb-32">
+    <h1 class="page-title">Initial Setup</h1>
+    <p class="page-description">Configure Magic Folder for first use</p>
+</div>
+
+<!-- Setup Form -->
+<div class="card">
+    <h2 class="card-title">Configuration</h2>
+    <form method="post" action="/setup">
+        <div class="form-group">
+            <label class="form-label">Base Directory</label>
+            <input type="text" name="base_dir" class="form-input" value="{{ config.base_dir or '' }}" placeholder="/path/to/magic/folder" required>
+            <p class="text-muted" style="font-size: 14px; margin-top: 8px;">
+                Choose where Magic Folder will organize your files
+            </p>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">AI Model</label>
+            <select name="model_name" class="form-input" required>
+                <option value="distilroberta-base" {% if config.model_name == 'distilroberta-base' %}selected{% endif %}>
+                    distilroberta-base (Recommended)
+                </option>
+                <option value="bert-base-uncased" {% if config.model_name == 'bert-base-uncased' %}selected{% endif %}>
+                    bert-base-uncased
+                </option>
+                <option value="all-MiniLM-L6-v2" {% if config.model_name == 'all-MiniLM-L6-v2' %}selected{% endif %}>
+                    all-MiniLM-L6-v2
+                </option>
+            </select>
+            <p class="text-muted" style="font-size: 14px; margin-top: 8px;">
+                The AI model used for categorizing files. DistilRoBERTa is recommended for best performance.
+            </p>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Enable Features</label>
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                <div style="display: flex; align-items: center;">
+                    <input type="checkbox" name="enable_feedback" checked style="margin-right: 12px;">
+                    <span>Feedback System - Learn from your corrections</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <input type="checkbox" name="enable_cache" checked style="margin-right: 12px;">
+                    <span>Content Caching - Improve performance by caching analysis</span>
                 </div>
             </div>
         </div>
-    </div>
+
+        <div style="text-align: right; margin-top: 32px;">
+            <button type="submit" class="btn btn-primary">Complete Setup</button>
+        </div>
+    </form>
+</div>
+
+<!-- Default Categories -->
+<div class="card">
+    <h2 class="card-title">Default Categories</h2>
+    <p class="text-muted mb-24">These categories will be created automatically</p>
     
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html> 
+    <div class="grid grid-3">
+        {% for category in ['taxes', 'receipts', 'personal_id', 'medical', 'work', 'education', 'financial', 'legal', 'correspondence', 'other'] %}
+        <div style="padding: 16px; border: 1px solid #e0e0e0; border-radius: 4px; text-align: center;">
+            <i class="bi bi-folder" style="font-size: 24px; color: #666; margin-bottom: 8px;"></i>
+            <div style="font-weight: 500;">{{ category|title }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

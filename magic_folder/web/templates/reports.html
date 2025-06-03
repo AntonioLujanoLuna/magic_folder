@@ -1,303 +1,195 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magic Folder - Reports</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="bi bi-folder-symlink me-2"></i>Magic Folder
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/"><i class="bi bi-house me-1"></i>Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/upload"><i class="bi bi-upload me-1"></i>Upload</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/files"><i class="bi bi-files me-1"></i>Files</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/reports"><i class="bi bi-bar-chart me-1"></i>Reports</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/settings"><i class="bi bi-gear me-1"></i>Settings</a>
-                    </li>
-                </ul>
-                <div class="d-flex">
-                    <a href="/help" class="btn btn-outline-light me-2">
-                        <i class="bi bi-question-circle me-1"></i>Help
-                    </a>
-                </div>
-            </div>
-        </div>
-    </nav>
+{% extends 'base.html' %}
 
-    <div class="container mt-4">
-        <div class="row mb-4">
-            <div class="col-md-12">
-                <h2><i class="bi bi-bar-chart me-2"></i>Reports</h2>
-                <p class="text-muted">
-                    View file statistics and trends within a selected date range.
-                </p>
-            </div>
-        </div>
+{% block title %}Reports - Magic Folder{% endblock %}
 
-        <div class="row mb-4">
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <i class="bi bi-calendar-range me-1"></i>Date Range
-                    </div>
-                    <div class="card-body">
-                        <form action="/reports" method="get" class="row g-3">
-                            <div class="col-md-4">
-                                <label for="start_date" class="form-label">Start Date</label>
-                                <input type="date" class="form-control report-date-picker" id="start_date" name="start_date" value="{{ start_date }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="end_date" class="form-label">End Date</label>
-                                <input type="date" class="form-control report-date-picker" id="end_date" name="end_date" value="{{ end_date }}">
-                            </div>
-                            <div class="col-md-4 d-flex align-items-end">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-filter me-1"></i>Apply Filter
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary ms-2 dropdown-toggle" data-bs-toggle="dropdown">
-                                    <i class="bi bi-clock-history me-1"></i>Quick Range
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="/reports?preset=today">Today</a></li>
-                                    <li><a class="dropdown-item" href="/reports?preset=yesterday">Yesterday</a></li>
-                                    <li><a class="dropdown-item" href="/reports?preset=week">Last 7 days</a></li>
-                                    <li><a class="dropdown-item" href="/reports?preset=month">Last 30 days</a></li>
-                                    <li><a class="dropdown-item" href="/reports?preset=quarter">Last 90 days</a></li>
-                                    <li><a class="dropdown-item" href="/reports?preset=year">Last 12 months</a></li>
-                                </ul>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
+{% block content %}
+<div class="mb-32">
+    <h1 class="page-title">Reports</h1>
+    <p class="page-description">Analytics and insights about your organized files</p>
+</div>
 
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card report-card">
-                    <div class="card-header bg-primary text-white">
-                        <i class="bi bi-pie-chart me-1"></i>Category Distribution
-                    </div>
-                    <div class="card-body">
-                        <canvas id="categoryChart" height="300"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card report-card">
-                    <div class="card-header bg-primary text-white">
-                        <i class="bi bi-graph-up me-1"></i>Daily Activity
-                    </div>
-                    <div class="card-body">
-                        <canvas id="activityChart" height="300"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!-- Report Stats -->
+<div class="stats-grid mb-32">
+    <div class="card stat-card">
+        <span class="stat-number">{{ stats.total_files }}</span>
+        <span class="stat-label">Total Files</span>
+    </div>
+    <div class="card stat-card">
+        <span class="stat-number">{{ stats.total_size_mb }}MB</span>
+        <span class="stat-label">Total Size</span>
+    </div>
+    <div class="card stat-card">
+        <span class="stat-number">{{ stats.files_this_week }}</span>
+        <span class="stat-label">This Week</span>
+    </div>
+    <div class="card stat-card">
+        <span class="stat-number">{{ stats.files_this_month }}</span>
+        <span class="stat-label">This Month</span>
+    </div>
+</div>
 
-        <div class="row">
-            <div class="col-md-12">
-                <div class="card report-card">
-                    <div class="card-header bg-primary text-white">
-                        <i class="bi bi-table me-1"></i>Summary Statistics
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3 mb-3">
-                                <div class="card h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <h6 class="card-title text-primary">Total Files</h6>
-                                        <p class="display-6 mb-0" id="totalFiles">0</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <div class="card h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <h6 class="card-title text-success">Top Category</h6>
-                                        <p class="display-6 mb-0" id="topCategory">-</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <div class="card h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <h6 class="card-title text-info">Daily Average</h6>
-                                        <p class="display-6 mb-0" id="dailyAverage">0</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <div class="card h-100 bg-light">
-                                    <div class="card-body text-center">
-                                        <h6 class="card-title text-warning">Most Active Day</h6>
-                                        <p class="display-6 mb-0" id="mostActiveDay">-</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row mt-4">
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                        <div>
-                            <i class="bi bi-filetype-pdf me-1"></i>Report Export
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <p>Generate and download reports for the selected date range:</p>
-                        <div class="d-flex gap-2">
-                            <a href="/reports/export?format=pdf&start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-outline-danger">
-                                <i class="bi bi-filetype-pdf me-1"></i>PDF Report
-                            </a>
-                            <a href="/reports/export?format=csv&start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-outline-success">
-                                <i class="bi bi-filetype-csv me-1"></i>CSV Export
-                            </a>
-                            <a href="/reports/export?format=json&start_date={{ start_date }}&end_date={{ end_date }}" class="btn btn-outline-primary">
-                                <i class="bi bi-filetype-json me-1"></i>JSON Data
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<!-- Charts -->
+<div class="grid grid-2 mb-32">
+    <!-- File Activity Over Time -->
+    <div class="card">
+        <h2 class="card-title">File Activity</h2>
+        <div class="chart-container">
+            <canvas id="activityChart"></canvas>
         </div>
     </div>
-
-    <footer class="bg-light py-3 mt-5">
-        <div class="container">
-            <p class="text-center text-muted mb-0">
-                &copy; {{ current_year }} Magic Folder - Intelligent Document Management
-            </p>
+    
+    <!-- File Types Distribution -->
+    <div class="card">
+        <h2 class="card-title">File Types</h2>
+        <div class="chart-container">
+            <canvas id="fileTypesChart"></canvas>
         </div>
-    </footer>
+    </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        // Parse data from the server
-        const categoryData = {{ category_data|safe }};
-        const activityData = {{ daily_activity|safe }};
-        
-        // Process data for summary statistics
-        let totalFiles = 0;
-        let topCategory = { name: "-", count: 0 };
-        
-        // Calculate total files and find top category
-        for (const [category, count] of Object.entries(categoryData)) {
-            totalFiles += count;
-            if (count > topCategory.count) {
-                topCategory = { name: category, count: count };
-            }
-        }
-        
-        // Calculate daily average
-        const numDays = Object.keys(activityData).length || 1; // Avoid division by zero
-        const dailyAverage = (totalFiles / numDays).toFixed(1);
-        
-        // Find most active day
-        let mostActiveDay = { date: "-", count: 0 };
-        for (const [date, count] of Object.entries(activityData)) {
-            if (count > mostActiveDay.count) {
-                mostActiveDay = { date: date, count: count };
-            }
-        }
-        
-        // Update summary statistics
-        document.getElementById('totalFiles').textContent = totalFiles;
-        document.getElementById('topCategory').textContent = topCategory.name;
-        document.getElementById('dailyAverage').textContent = dailyAverage;
-        document.getElementById('mostActiveDay').textContent = mostActiveDay.date !== "-" 
-            ? new Date(mostActiveDay.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-            : "-";
-        
-        // Initialize category distribution chart
-        const ctxCategory = document.getElementById('categoryChart').getContext('2d');
-        const categoryChart = new Chart(ctxCategory, {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(categoryData),
-                datasets: [{
-                    data: Object.values(categoryData),
-                    backgroundColor: [
-                        '#dc3545', '#fd7e14', '#6610f2', '#0dcaf0', 
-                        '#6c757d', '#198754', '#0d6efd', '#6f42c1', 
-                        '#20c997', '#adb5bd'
-                    ],
-                    hoverOffset: 4
-                }]
+<!-- Category Breakdown -->
+<div class="card mb-32">
+    <h2 class="card-title">Category Breakdown</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Files</th>
+                <th>Size</th>
+                <th>Percentage</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for category, data in stats.category_breakdown.items() %}
+            <tr>
+                <td>
+                    <div style="display: flex; align-items: center;">
+                        <i class="bi bi-folder file-icon"></i>
+                        {{ category|title }}
+                    </div>
+                </td>
+                <td>{{ data.count }}</td>
+                <td>{{ data.size_mb }}MB</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 60px; height: 8px; background-color: #f0f0f0; border-radius: 4px; overflow: hidden;">
+                            <div style="height: 100%; background-color: #333; width: {{ data.percentage }}%;"></div>
+                        </div>
+                        <span>{{ data.percentage }}%</span>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Recent Activity -->
+<div class="card">
+    <h2 class="card-title">Recent Activity</h2>
+    {% if stats.recent_activity %}
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+        {% for activity in stats.recent_activity %}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #e0e0e0; border-radius: 4px;">
+            <div style="display: flex; align-items: center;">
+                <i class="bi bi-file-earmark file-icon"></i>
+                <div>
+                    <div>{{ activity.filename }}</div>
+                    <div class="text-muted" style="font-size: 14px;">
+                        Categorized as {{ activity.category }}
+                    </div>
+                </div>
+            </div>
+            <div class="text-muted" style="font-size: 14px;">
+                {{ activity.timestamp.strftime('%Y-%m-%d %H:%M') }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center" style="padding: 40px 0; color: #666;">
+        <i class="bi bi-clock-history" style="font-size: 48px; display: block; margin-bottom: 16px;"></i>
+        <p>No recent activity to display</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Activity Chart
+    const activityCtx = document.getElementById('activityChart').getContext('2d');
+    const activityChart = new Chart(activityCtx, {
+        type: 'line',
+        data: {
+            labels: [{% for day in stats.activity_days %}'{{ day }}',{% endfor %}],
+            datasets: [{
+                label: 'Files Processed',
+                data: [{% for count in stats.activity_counts %}{{ count }},{% endfor %}],
+                borderColor: '#333',
+                backgroundColor: 'rgba(51, 51, 51, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
             },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'right',
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#e0e0e0'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
                     }
                 }
             }
-        });
-        
-        // Initialize daily activity chart
-        const ctxActivity = document.getElementById('activityChart').getContext('2d');
-        const activityChart = new Chart(ctxActivity, {
-            type: 'line',
-            data: {
-                labels: Object.keys(activityData).map(date => 
-                    new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                ),
-                datasets: [{
-                    label: 'Files Added',
-                    data: Object.values(activityData),
-                    backgroundColor: 'rgba(13, 110, 253, 0.2)',
-                    borderColor: 'rgba(13, 110, 253, 1)',
-                    borderWidth: 2,
-                    tension: 0.3,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Number of Files'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Date'
+        }
+    });
+
+    // File Types Chart
+    const fileTypesCtx = document.getElementById('fileTypesChart').getContext('2d');
+    const fileTypesChart = new Chart(fileTypesCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for ext in stats.file_types.keys() %}'{{ ext }}',{% endfor %}],
+            datasets: [{
+                data: [{% for count in stats.file_types.values() %}{{ count }},{% endfor %}],
+                backgroundColor: [
+                    '#333', '#666', '#999', '#bbb', '#ddd',
+                    '#555', '#777', '#aaa', '#ccc', '#eee'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        font: {
+                            family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
                         }
                     }
                 }
             }
-        });
-    </script>
-</body>
-</html> 
+        }
+    });
+});
+</script>
+{% endblock %} 

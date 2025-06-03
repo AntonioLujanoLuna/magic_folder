@@ -3,251 +3,131 @@
 {% block title %}Dashboard - Magic Folder{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Dashboard</h1>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <div class="btn-group me-2">
-            <a href="/upload" class="btn btn-sm btn-outline-secondary">Upload Files</a>
-            <a href="/reports" class="btn btn-sm btn-outline-secondary">Generate Report</a>
-        </div>
-        <span class="text-muted small">Last updated: {{ stats.last_updated.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+<div class="mb-32">
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-description">Overview of your organized files</p>
+</div>
+
+<!-- Statistics -->
+<div class="stats-grid">
+    <div class="card stat-card">
+        <span class="stat-number">{{ stats.categories.values()|sum }}</span>
+        <span class="stat-label">Total Files</span>
+    </div>
+    <div class="card stat-card">
+        <span class="stat-number">{{ stats.categories|length }}</span>
+        <span class="stat-label">Categories</span>
+    </div>
+    <div class="card stat-card">
+        <span class="stat-number">{{ stats.file_types|length }}</span>
+        <span class="stat-label">File Types</span>
+    </div>
+    <div class="card stat-card">
+        <span class="stat-number">{{ stats.recent_files|length }}</span>
+        <span class="stat-label">Recent Files</span>
     </div>
 </div>
 
-<!-- Statistics Cards -->
-<div class="row">
-    <div class="col-md-3 mb-4">
-        <div class="card h-100 card-hover">
-            <div class="card-body">
-                <h5 class="card-title text-primary"><i class="bi bi-files"></i> Total Files</h5>
-                <p class="card-text display-6">{{ stats.categories.values()|sum }}</p>
-                <p class="text-muted">Across {{ stats.categories|length }} categories</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-4">
-        <div class="card h-100 card-hover">
-            <div class="card-body">
-                <h5 class="card-title text-success"><i class="bi bi-folder"></i> Top Category</h5>
-                {% set total_files = stats.categories.values()|sum %}
-                {% if total_files > 0 %}
-                    {% set top_category = stats.categories|dictsort(by='value')|reverse|first %}
-                    <p class="card-text display-6">{{ top_category[0] }}</p>
-                    <p class="text-muted">{{ top_category[1] }} files ({{ (top_category[1] / total_files * 100)|round|int }}%)</p>
-                {% else %}
-                    <p class="card-text display-6">No files yet</p>
-                    <p class="text-muted">Start by dropping files into the folder</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-4">
-        <div class="card h-100 card-hover">
-            <div class="card-body">
-                <h5 class="card-title text-info"><i class="bi bi-file-earmark"></i> File Types</h5>
-                <p class="card-text display-6">{{ stats.file_types|length }}</p>
-                <p class="text-muted">Most common: 
-                    {% if stats.file_types %}
-                    {{ stats.file_types|dictsort(by='value')|reverse|first|first }}
-                    {% else %}
-                    N/A
-                    {% endif %}
-                </p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-4">
-        <div class="card h-100 card-hover">
-            <div class="card-body">
-                <h5 class="card-title text-warning"><i class="bi bi-clock-history"></i> Recent Activity</h5>
-                <p class="card-text display-6">{{ stats.recent_files|length }}</p>
-                <p class="text-muted">Files processed recently</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <!-- Category Distribution Chart -->
-    <div class="col-md-6 mb-4">
-        <div class="card card-hover">
-            <div class="card-header bg-header">
-                <h5 class="card-title mb-0"><i class="bi bi-pie-chart"></i> Category Distribution</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="categoryChart" height="300"></canvas>
-            </div>
+<!-- Charts and Recent Activity -->
+<div class="grid grid-2">
+    <!-- Category Distribution -->
+    <div class="card">
+        <h2 class="card-title">Category Distribution</h2>
+        <div class="chart-container">
+            <canvas id="categoryChart"></canvas>
         </div>
     </div>
     
-    <!-- File Types Chart -->
-    <div class="col-md-6 mb-4">
-        <div class="card card-hover">
-            <div class="card-header bg-header">
-                <h5 class="card-title mb-0"><i class="bi bi-bar-chart"></i> File Types</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="fileTypesChart" height="300"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
     <!-- Recent Files -->
-    <div class="col-md-6 mb-4">
-        <div class="card card-hover">
-            <div class="card-header bg-header">
-                <h5 class="card-title mb-0"><i class="bi bi-clock-history"></i> Recent Files</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                    <table class="table table-striped table-sm">
-                        <thead>
-                            <tr>
-                                <th>File</th>
-                                <th>Category</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for file in stats.recent_files %}
-                            <tr>
-                                <td>
-                                    <i class="bi bi-file-earmark"></i>
-                                    {{ file.name|truncate(30) }}
-                                </td>
-                                <td><span class="badge bg-secondary">{{ file.category }}</span></td>
-                                <td>{{ file.modified.strftime('%Y-%m-%d %H:%M') }}</td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="3" class="text-center">No files processed yet</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    <div class="card">
+        <h2 class="card-title">Recent Files</h2>
+        {% if stats.recent_files %}
+        <table class="table">
+            <tbody>
+                {% for file in stats.recent_files[:10] %}
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center;">
+                            <i class="bi bi-file-earmark file-icon"></i>
+                            <div>
+                                <div>{{ file.name[:40] }}{% if file.name|length > 40 %}...{% endif %}</div>
+                                <div class="text-muted" style="font-size: 14px;">{{ file.category }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-muted" style="font-size: 14px;">
+                        {{ file.modified.strftime('%Y-%m-%d') }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="text-center" style="padding: 40px 0; color: #666;">
+            <i class="bi bi-inbox" style="font-size: 48px; display: block; margin-bottom: 16px;"></i>
+            <p>No files processed yet</p>
+            <a href="/upload" class="btn btn-primary mt-16">Upload Your First File</a>
         </div>
-    </div>
-    
-    <!-- Activity Log -->
-    <div class="col-md-6 mb-4">
-        <div class="card card-hover">
-            <div class="card-header bg-header">
-                <h5 class="card-title mb-0"><i class="bi bi-journal-text"></i> Activity Log</h5>
-            </div>
-            <div class="card-body">
-                <div class="log-container" style="max-height: 400px; overflow-y: auto;">
-                    {% for log_entry in stats.activity_log %}
-                    <div class="log-entry small border-bottom py-1">
-                        {{ log_entry }}
-                    </div>
-                    {% else %}
-                    <div class="text-center py-3">No activity recorded yet</div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
+        {% endif %}
     </div>
 </div>
+
+<!-- Categories Overview -->
+{% if stats.categories %}
+<div class="card">
+    <h2 class="card-title">Categories</h2>
+    <div class="grid grid-3">
+        {% for category, count in stats.categories.items() %}
+        <div style="padding: 16px; border: 1px solid #e0e0e0; border-radius: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span>{{ category }}</span>
+                <span class="category-badge">{{ count }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // Prepare data for category chart
+// Category Distribution Chart
+document.addEventListener('DOMContentLoaded', function() {
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    
     const categoryData = {
-        labels: [{% for category, info in stats.category_breakdown.items() %}'{{ category }}',{% endfor %}],
+        labels: [{% for category, count in stats.categories.items() %}'{{ category }}',{% endfor %}],
         datasets: [{
-            label: 'Files',
-            data: [{% for category, info in stats.category_breakdown.items() %}{{ info.count }},{% endfor %}],
+            data: [{% for category, count in stats.categories.items() %}{{ count }},{% endfor %}],
             backgroundColor: [
-                'rgba(75, 192, 192, 0.7)',
-                'rgba(54, 162, 235, 0.7)',
-                'rgba(255, 206, 86, 0.7)',
-                'rgba(255, 99, 132, 0.7)',
-                'rgba(153, 102, 255, 0.7)',
-                'rgba(255, 159, 64, 0.7)',
-                'rgba(199, 199, 199, 0.7)',
-                'rgba(83, 102, 255, 0.7)',
-                'rgba(40, 159, 64, 0.7)',
-                'rgba(210, 199, 199, 0.7)',
+                '#333', '#666', '#999', '#bbb', '#ddd',
+                '#555', '#777', '#aaa', '#ccc', '#eee'
             ],
-            borderWidth: 1
+            borderWidth: 0
         }]
     };
 
-        // Prepare data for file types chart
-        const fileTypesData = {
-        labels: [{% if stats.file_types %}{% for ext, count in stats.file_types.items()|sort(attribute=1, reverse=true)|list|slice(10) %}'{{ ext }}',{% endfor %}{% endif %}],
-        datasets: [{
-            label: 'Count',
-            data: [{% if stats.file_types %}{% for ext, count in stats.file_types.items()|sort(attribute=1, reverse=true)|list|slice(10) %}{{ count }},{% endfor %}{% endif %}],
-            backgroundColor: 'rgba(54, 162, 235, 0.7)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 1
-        }]
-    };
-
-    // Initialize charts when DOM is ready
-    document.addEventListener('DOMContentLoaded', function() {
-        // Category chart
-        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
-        const categoryChart = new Chart(categoryCtx, {
-            type: 'pie',
-            data: categoryData,
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.parsed || 0;
-                                const dataset = context.dataset;
-                                const total = dataset.data.reduce((acc, data) => acc + data, 0);
-                                const percentage = Math.round((value / total) * 100);
-                                return `${label}: ${value} files (${percentage}%)`;
-                            }
+    new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: categoryData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        font: {
+                            family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
                         }
                     }
                 }
             }
-        });
-
-        // File types chart
-        const fileTypesCtx = document.getElementById('fileTypesChart').getContext('2d');
-        const fileTypesChart = new Chart(fileTypesCtx, {
-            type: 'bar',
-            data: fileTypesData,
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Number of Files'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'File Extension'
-                        }
-                    }
-                }
-            }
-        });
+        }
     });
+});
 </script>
 {% endblock %} 
